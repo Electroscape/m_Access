@@ -1,11 +1,9 @@
 #include "header.h"
-#include "header_st.h"
 #include "header_s.h"
-using namespace stb_namespace;
+#include "header_st.h"
+//using namespace stb_namespace;
 #include <Keypad.h> /* Standardbibliothek                                                 */
 #include <Keypad_I2C.h>
-#include "PCF8574.h"
-#include <stb_common.h>
 #include <stb_brain.h>
 #include <avr/wdt.h>
 #include <PCF8574.h> /* https://github.com/skywodd/pcf8574_arduino_library - modifiziert!  */
@@ -15,6 +13,7 @@ using namespace stb_namespace;
 #include <stb_rfid.h>
 
 #define buzzer 3
+int rcvd;
 
 
 STB STB;
@@ -87,16 +86,16 @@ void keypadEvent(KeypadEvent eKey) {
             update_timer = millis();
             switch (eKey) {
                 case '#':
-                    STB.dbgln("change pass");
+                    STB.dbgln("change pass\n");
                     break;
 
                 case '*':
-                    STB.dbgln("reset pass");
+                    STB.dbgln("reset pass\n");
                     break;
 
                 default:
                     passKeypad.append(eKey);
-                   // printWithHeader(passKeypad.guess, relayCode);
+                    STB.rs485AddToBuffer(passKeypad.guess);
                     break;
             }
             break;
@@ -111,24 +110,21 @@ void setup() {
     // starts serial and default oled
     
     STB.begin();
-   
     STB.i2cScanner();
-    
-    Serial.println("WDT endabled");
+    STB.dbgln("WDT endabled");
     wdt_enable(WDTO_8S);
+
+    //BRAIN.receiveFlags(STB);
+    STB.rs485SetSlaveAddr(0);
     
     #ifndef rfidDisable
-    STB_RFID::RFIDInit(RFID_0);
+      STB_RFID::RFIDInit(RFID_0);
     #endif
-    
-    STB.rs485SetSlaveAddr(0);
-  
-    //BRAIN.receiveFlags(STB);
     
 
    // if (BRAIN.flags[ledFlag]) {
-        // led init
-    //}
+   //      led init;
+   // }
     pinMode(buzzer,OUTPUT);
 
     STB.dbgln("Relay: ...");
@@ -137,7 +133,6 @@ void setup() {
     }
     wdt_reset();
 
-    //delay(50);
 
     STB.dbgln("Keypad: ...");
     if (keypad_init()) {
@@ -158,23 +153,32 @@ void setup() {
 
 void loop() {
 
+
+   /* 
     wdt_reset();
-    Keypad.getKey();
-   // #ifndef rfidDisable
-   //     rfidRead();
-   // #endif
-   // delay(1000);
-//
+    //Keypad.getKey();
+    
+    STB.rs485SlaveRespond();
+  //  delay(1000);
+
    // tone(buzzer,1700);
    // STB.dbgln("peep for 300ms");
    // delay(300);
    // noTone(buzzer);
    // STB.dbgln("stop for 200ms");
    // delay(200);
-    
-    //STB.rs485AddToBuffer("my response/data");
     // sends out buffer once polled along with !eof, to handle cmds be aware this sends out the !EOF
-    // STB.rs485SlaveRespond();
+    
+    //STB.rs485RcvdNextLn();
+    */
+   
+    #ifndef rfidDisable
+        rfidRead();
+    #endif
+    STB.dbgln(STB.bufferOut);
+    STB.rs485SlaveRespond();
+
+    wdt_reset();
 }
 
 void rfidRead() {
@@ -199,11 +203,11 @@ void rfidRead() {
 
     Serial.println("RFID message adding");
     Serial.flush();
-
+    STB.dbgln(message);
     STB.defaultOled.clear();
     STB.defaultOled.println(message);
     STB.rs485AddToBuffer(message);
-
+    
     Serial.println("RFID end");
     Serial.flush();
 }
