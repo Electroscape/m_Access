@@ -87,6 +87,7 @@ void keypadEvent(KeypadEvent eKey) {
             switch (eKey) {
                 case '#':
                     STB.dbgln("change pass\n");
+                    doubleBeep();
                     break;
 
                 case '*':
@@ -96,6 +97,7 @@ void keypadEvent(KeypadEvent eKey) {
                 default:
                     passKeypad.append(eKey);
                     STB.rs485AddToBuffer(passKeypad.guess);
+                    beep500();
                     break;
             }
             break;
@@ -110,22 +112,15 @@ void setup() {
     // starts serial and default oled
     
     STB.begin();
-    STB.i2cScanner();
     STB.dbgln("WDT endabled");
     wdt_enable(WDTO_8S);
-
+    //STB.i2cScanner();
     //BRAIN.receiveFlags(STB);
     STB.rs485SetSlaveAddr(0);
-    
+    buzzer_init();
     #ifndef rfidDisable
       STB_RFID::RFIDInit(RFID_0);
     #endif
-    
-
-   // if (BRAIN.flags[ledFlag]) {
-   //      led init;
-   // }
-    pinMode(buzzer,OUTPUT);
 
     STB.dbgln("Relay: ...");
     if (relay_init()) {
@@ -138,11 +133,7 @@ void setup() {
     if (keypad_init()) {
         STB.dbgln(" ok\n");
     }
-    wdt_reset();
-    delay(5);
-
-    
-    
+ 
     STB.printSetupEnd();
     
 }
@@ -153,32 +144,36 @@ void setup() {
 
 void loop() {
 
-
-   /* 
-    wdt_reset();
-    //Keypad.getKey();
+    Keypad.getKey();
     
-    STB.rs485SlaveRespond();
-  //  delay(1000);
-
-   // tone(buzzer,1700);
-   // STB.dbgln("peep for 300ms");
-   // delay(300);
-   // noTone(buzzer);
-   // STB.dbgln("stop for 200ms");
-   // delay(200);
-    // sends out buffer once polled along with !eof, to handle cmds be aware this sends out the !EOF
-    
-    //STB.rs485RcvdNextLn();
-    */
-   
-    #ifndef rfidDisable
-        rfidRead();
-    #endif
-    STB.dbgln(STB.bufferOut);
-    STB.rs485SlaveRespond();
+    //#ifndef rfidDisable
+    //    rfidRead();
+    //#endif
+    //STB.rs485SlaveRespond();
 
     wdt_reset();
+}
+
+void buzzer_init(){
+    pinMode(buzzer,OUTPUT);
+}
+
+void beep500(){
+    tone(buzzer,1700);
+    delay(100);
+    noTone(buzzer);
+    STB.dbgln("peep for 500ms");
+}
+
+void doubleBeep(){
+    tone(buzzer,1700);
+    delay(300);
+    noTone(buzzer);
+    delay(200);
+    tone(buzzer,1700);
+    delay(800);
+    noTone(buzzer);
+    STB.dbgln("peep sequence");
 }
 
 void rfidRead() {
@@ -198,16 +193,20 @@ void rfidRead() {
             Serial.flush();
             strcat(message, "_");
             strcat(message, (char*) data);
+            doubleBeep();
         }
     }
 
     Serial.println("RFID message adding");
     Serial.flush();
-    STB.dbgln(message);
-    STB.defaultOled.clear();
-    STB.defaultOled.println(message);
-    STB.rs485AddToBuffer(message);
+
     
+    //STB.defaultOled.println(message);
+    STB.defaultOled.clear();
+    //STB.defaultOled.println(message);
+    STB.rs485AddToBuffer(message);
+    STB.defaultOled.println(STB.bufferOut);
+
     Serial.println("RFID end");
     Serial.flush();
 }
