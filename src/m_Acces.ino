@@ -9,6 +9,15 @@
 #include <stb_rfid.h>
 
 
+/*
+TODO:
+ - (optional) make buzzer fncs non blocking to not interfere with the bus unnecessarily
+ - ensure critical messages are confirmed like evaluation, may be best to do this in lib arduino with a flag for the slaverespond
+ - periodic updates on the password? everytime its polled? reset being handled by mother or brain?
+
+*/
+
+
 STB_BRAIN Brain;
 
 
@@ -51,7 +60,7 @@ void setup() {
 
     Brain.setSlaveAddr(0);
 
-    Brain.receiveFlags();
+    // Brain.receiveFlags();
 
 
     buzzer_init();
@@ -64,12 +73,10 @@ void setup() {
     }
  
     Brain.STB_.printSetupEnd();
-    
+
+    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "ENTER CODE");
 }
-    /**
-     * @brief Initialize both the buzzer and the rfid to read a card
-     * 
-     */
+
 
 void loop() {
 
@@ -86,6 +93,9 @@ void loop() {
 }
 
 
+// --- Keypad
+
+
 void keypad_init() {
     Brain.STB_.dbgln("Keypad: ...");
     Keypad.addEventListener(keypadEvent);  // Event Listener erstellen
@@ -94,6 +104,7 @@ void keypad_init() {
     Keypad.setDebounceTime(20);
     Brain.STB_.dbgln(" ok\n");
 }
+
 
 void keypadEvent(KeypadEvent eKey) {
     KeyState state = IDLE;
@@ -104,17 +115,18 @@ void keypadEvent(KeypadEvent eKey) {
         case PRESSED:
             switch (eKey) {
                 case '#':
-                    Brain.STB_.dbgln("change pass\n");
+                    checkPassword();
                     doubleBeep();
                     break;
 
                 case '*':
-                    Brain.STB_.dbgln("reset pass\n");
+                    passwordReset();
                     break;
 
                 default:
                     passKeypad.append(eKey);
                     Brain.STB_.rs485AddToBuffer(passKeypad.guess);
+                    STB_OLED::writeCenteredLine(&Brain.STB_.defaultOled, passKeypad.guess);
                     beep500();
                     break;
             }
@@ -126,9 +138,45 @@ void keypadEvent(KeypadEvent eKey) {
 }
 
 
+/**
+ * @brief checks the password and displays
+ * @return true 
+ * @return false 
+ */
+void checkPassword() {
+    if (strlen(passKeypad.guess) < 1) return;
+
+
+    // TBD evaluation on the Mother iirc
+
+    /*
+    bool result = passKeypad.evaluate();
+
+    if (result) {
+        // display some stuff
+    } else {
+
+    }
+
+    return result;
+    */
+}
+
+
+void passwordReset() {
+    if (strlen(passKeypad.guess) > 0) {
+        passKeypad.reset();
+    }
+}
+
+
+// --- Buzzer
+
+
 void buzzer_init(){
     pinMode(BUZZER_PIN,OUTPUT);
 }
+
 
 void beep500(){
     tone(BUZZER_PIN,1700);
@@ -136,6 +184,7 @@ void beep500(){
     noTone(BUZZER_PIN);
     Brain.STB_.dbgln("peep for 500ms");
 }
+
 
 void doubleBeep(){
     tone(BUZZER_PIN,1700);
@@ -147,6 +196,10 @@ void doubleBeep(){
     noTone(BUZZER_PIN);
     Brain.STB_.dbgln("peep sequence");
 }
+
+
+// --- RFID
+
 
 void rfidRead() {
     if (millis() - lastRfidCheck < rfidCheckInterval) {
