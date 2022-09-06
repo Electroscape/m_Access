@@ -11,13 +11,13 @@
 
 STB_BRAIN Brain;
 
-#ifndef rfidDisable
-    // only use software SPI not hardware SPI
-    Adafruit_PN532 RFID_0(PN532_SCK, PN532_MISO, PN532_MOSI, RFID_1_SS_PIN);
-    Adafruit_PN532 RFID_READERS[1] = {RFID_0};
-    uint8_t data[16];
-    unsigned long lastRfidCheck = millis();
-#endif
+
+// only use software SPI not hardware SPI
+Adafruit_PN532 RFID_0(PN532_SCK, PN532_MISO, PN532_MOSI, RFID_1_SS_PIN);
+Adafruit_PN532 RFID_READERS[1] = {RFID_0};
+uint8_t data[16];
+unsigned long lastRfidCheck = millis();
+
 
 /*==KEYPAD I2C============================================================*/
 const byte KEYPAD_ROWS = 4;  // Zeilen
@@ -48,17 +48,19 @@ void setup() {
     Brain.begin();
     Brain.STB_.dbgln("WDT endabled");
     wdt_enable(WDTO_8S);
-    //STB.i2cScanner();
-    //BRAIN.receiveFlags(STB);
-    Brain.setSlaveAddr(0);
-    buzzer_init();
-    #ifndef rfidDisable
-      STB_RFID::RFIDInit(RFID_0);
-    #endif
 
-    Brain.STB_.dbgln("Keypad: ...");
-    if (keypad_init()) {
-        Brain.STB_.dbgln(" ok\n");
+    Brain.setSlaveAddr(0);
+
+    Brain.receiveFlags();
+
+
+    buzzer_init();
+    if (Brain.flags[rfidFlag]) {
+        STB_RFID::RFIDInit(RFID_0);
+    }
+
+    if (Brain.flags[keypadFlag]) {
+        keypad_init();
     }
  
     Brain.STB_.printSetupEnd();
@@ -71,24 +73,26 @@ void setup() {
 
 void loop() {
 
-
-    Keypad.getKey();
+    if (Brain.flags[keypadFlag]) {
+        Keypad.getKey();
+    }
     
-    //#ifndef rfidDisable
-    //    rfidRead();
-    //#endif
+    if (Brain.flags[rfidFlag]) {
+        rfidRead();
+    }
     Brain.slaveRespond();
 
     wdt_reset();
 }
 
 
-bool keypad_init() {
+void keypad_init() {
+    Brain.STB_.dbgln("Keypad: ...");
     Keypad.addEventListener(keypadEvent);  // Event Listener erstellen
     Keypad.begin(makeKeymap(KeypadKeys));
     Keypad.setHoldTime(5000);
     Keypad.setDebounceTime(20);
-    return true;
+    Brain.STB_.dbgln(" ok\n");
 }
 
 void keypadEvent(KeypadEvent eKey) {
