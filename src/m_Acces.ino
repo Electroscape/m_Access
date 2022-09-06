@@ -9,8 +9,7 @@
 #include <stb_rfid.h>
 
 
-STB STB;
-STB_BRAIN BRAIN;
+STB_BRAIN Brain;
 
 #ifndef rfidDisable
     // only use software SPI not hardware SPI
@@ -46,23 +45,23 @@ void setup() {
     
     // starts serial and default oled
     
-    STB.begin();
-    STB.dbgln("WDT endabled");
+    Brain.begin();
+    Brain.STB_.dbgln("WDT endabled");
     wdt_enable(WDTO_8S);
     //STB.i2cScanner();
     //BRAIN.receiveFlags(STB);
-    STB.rs485SetSlaveAddr(0);
+    Brain.setSlaveAddr(0);
     buzzer_init();
     #ifndef rfidDisable
       STB_RFID::RFIDInit(RFID_0);
     #endif
 
-    STB.dbgln("Keypad: ...");
+    Brain.STB_.dbgln("Keypad: ...");
     if (keypad_init()) {
-        STB.dbgln(" ok\n");
+        Brain.STB_.dbgln(" ok\n");
     }
  
-    STB.printSetupEnd();
+    Brain.STB_.printSetupEnd();
     
 }
     /**
@@ -78,7 +77,7 @@ void loop() {
     //#ifndef rfidDisable
     //    rfidRead();
     //#endif
-    STB.rs485SlaveRespond();
+    Brain.slaveRespond();
 
     wdt_reset();
 }
@@ -101,17 +100,17 @@ void keypadEvent(KeypadEvent eKey) {
         case PRESSED:
             switch (eKey) {
                 case '#':
-                    STB.dbgln("change pass\n");
+                    Brain.STB_.dbgln("change pass\n");
                     doubleBeep();
                     break;
 
                 case '*':
-                    STB.dbgln("reset pass\n");
+                    Brain.STB_.dbgln("reset pass\n");
                     break;
 
                 default:
                     passKeypad.append(eKey);
-                    STB.rs485AddToBuffer(passKeypad.guess);
+                    Brain.STB_.rs485AddToBuffer(passKeypad.guess);
                     beep500();
                     break;
             }
@@ -131,7 +130,7 @@ void beep500(){
     tone(BUZZER_PIN,1700);
     delay(100);
     noTone(BUZZER_PIN);
-    STB.dbgln("peep for 500ms");
+    Brain.STB_.dbgln("peep for 500ms");
 }
 
 void doubleBeep(){
@@ -142,7 +141,7 @@ void doubleBeep(){
     tone(BUZZER_PIN,1700);
     delay(800);
     noTone(BUZZER_PIN);
-    STB.dbgln("peep sequence");
+    Brain.STB_.dbgln("peep sequence");
 }
 
 void rfidRead() {
@@ -171,9 +170,9 @@ void rfidRead() {
 
     
     //STB.defaultOled.println(message);
-    STB.defaultOled.clear();
+    Brain.STB_.defaultOled.clear();
     //STB.defaultOled.println(message);
-    STB.rs485AddToBuffer(message);
+    Brain.STB_.rs485AddToBuffer(message);
     // STB.defaultOled.println(STB.bufferOut);
 
     Serial.println("RFID end");
