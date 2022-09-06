@@ -10,8 +10,6 @@
 
 #define buzzer 3
 
-
-
 STB STB;
 STB_BRAIN BRAIN;
 
@@ -38,9 +36,6 @@ char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
 
 byte KeypadRowPins[KEYPAD_ROWS] = {1, 6, 5, 3};  // Zeilen  - Messleitungen
 byte KeypadColPins[KEYPAD_COLS] = {2, 0, 4};     // Spalten - Steuerleitungen (abwechselnd HIGH)
-
-static unsigned long update_timer = millis();
-const int keypad_reset_interval = 3000;
 
 Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_ROWS, KEYPAD_COLS, KEYPAD_ADD, PCF8574_MODE);
 
@@ -84,7 +79,7 @@ void loop() {
     //#ifndef rfidDisable
     //    rfidRead();
     //#endif
-    //STB.rs485SlaveRespond();
+    STB.rs485SlaveRespond();
 
     wdt_reset();
 }
@@ -105,7 +100,6 @@ void keypadEvent(KeypadEvent eKey) {
 
     switch (state) {
         case PRESSED:
-            update_timer = millis();
             switch (eKey) {
                 case '#':
                     STB.dbgln("change pass\n");
