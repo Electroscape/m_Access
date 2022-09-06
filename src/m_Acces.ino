@@ -1,8 +1,4 @@
-#include "header.h"
-#include "header_s.h"
-#include "header_st.h"
-//using namespace stb_namespace;
-#include <Keypad.h> /* Standardbibliothek                                                 */
+#include "header_st.h"                                     
 #include <Keypad_I2C.h>
 #include <stb_brain.h>
 #include <avr/wdt.h>
@@ -13,7 +9,7 @@
 #include <stb_rfid.h>
 
 #define buzzer 3
-int rcvd;
+
 
 
 STB STB;
@@ -51,22 +47,48 @@ Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_R
 // Passwort
 Password passKeypad = Password(secret_password);
 
-/*==PCF8574============================================================*/
-PCF8574 relay;
 
+void setup() {
+    
+    // starts serial and default oled
+    
+    STB.begin();
+    STB.dbgln("WDT endabled");
+    wdt_enable(WDTO_8S);
+    //STB.i2cScanner();
+    //BRAIN.receiveFlags(STB);
+    STB.rs485SetSlaveAddr(0);
+    buzzer_init();
+    #ifndef rfidDisable
+      STB_RFID::RFIDInit(RFID_0);
+    #endif
 
-bool relay_init() {
-    Serial.println("initializing relay");
-    relay.begin(RELAY_I2C_ADD);
-
-    for (int i = 0; i < REL_AMOUNT; i++) {
-        relay.pinMode(relayPinArray[i], OUTPUT);
-        relay.digitalWrite(relayPinArray[i], relayInitArray[i]);
+    STB.dbgln("Keypad: ...");
+    if (keypad_init()) {
+        STB.dbgln(" ok\n");
     }
-
-    Serial.print(F("\n successfully initialized relay\n"));
-    return true;
+ 
+    STB.printSetupEnd();
+    
 }
+    /**
+     * @brief Initialize both the buzzer and the rfid to read a card
+     * 
+     */
+
+void loop() {
+
+
+    Keypad.getKey();
+    
+    //#ifndef rfidDisable
+    //    rfidRead();
+    //#endif
+    //STB.rs485SlaveRespond();
+
+    wdt_reset();
+}
+
 
 bool keypad_init() {
     Keypad.addEventListener(keypadEvent);  // Event Listener erstellen
@@ -107,52 +129,6 @@ void keypadEvent(KeypadEvent eKey) {
     }
 }
 
-void setup() {
-    
-    // starts serial and default oled
-    
-    STB.begin();
-    STB.dbgln("WDT endabled");
-    wdt_enable(WDTO_8S);
-    //STB.i2cScanner();
-    //BRAIN.receiveFlags(STB);
-    STB.rs485SetSlaveAddr(0);
-    buzzer_init();
-    #ifndef rfidDisable
-      STB_RFID::RFIDInit(RFID_0);
-    #endif
-
-    STB.dbgln("Relay: ...");
-    if (relay_init()) {
-        STB.dbgln("ok");
-    }
-    wdt_reset();
-
-
-    STB.dbgln("Keypad: ...");
-    if (keypad_init()) {
-        STB.dbgln(" ok\n");
-    }
- 
-    STB.printSetupEnd();
-    
-}
-    /**
-     * @brief Initialize both the buzzer and the rfid to read a card
-     * 
-     */
-
-void loop() {
-
-    Keypad.getKey();
-    
-    //#ifndef rfidDisable
-    //    rfidRead();
-    //#endif
-    //STB.rs485SlaveRespond();
-
-    wdt_reset();
-}
 
 void buzzer_init(){
     pinMode(buzzer,OUTPUT);
@@ -205,7 +181,7 @@ void rfidRead() {
     STB.defaultOled.clear();
     //STB.defaultOled.println(message);
     STB.rs485AddToBuffer(message);
-    STB.defaultOled.println(STB.bufferOut);
+    // STB.defaultOled.println(STB.bufferOut);
 
     Serial.println("RFID end");
     Serial.flush();
