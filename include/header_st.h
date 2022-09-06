@@ -23,3 +23,6 @@ int ledPins[STRIPE_CNT] = {RFID_1_LED_PIN};
 
 #define KEYPAD_ADD 0x38
 char secret_password[] = "5314";
+
+// using PWM 1 (the left most)
+#define BUZZER_PIN 9

@@ -8,7 +8,6 @@
 #include <stb_oled.h>
 #include <stb_rfid.h>
 
-#define buzzer 3
 
 STB STB;
 STB_BRAIN BRAIN;
@@ -125,24 +124,24 @@ void keypadEvent(KeypadEvent eKey) {
 
 
 void buzzer_init(){
-    pinMode(buzzer,OUTPUT);
+    pinMode(BUZZER_PIN,OUTPUT);
 }
 
 void beep500(){
-    tone(buzzer,1700);
+    tone(BUZZER_PIN,1700);
     delay(100);
-    noTone(buzzer);
+    noTone(BUZZER_PIN);
     STB.dbgln("peep for 500ms");
 }
 
 void doubleBeep(){
-    tone(buzzer,1700);
+    tone(BUZZER_PIN,1700);
     delay(300);
-    noTone(buzzer);
+    noTone(BUZZER_PIN);
     delay(200);
-    tone(buzzer,1700);
+    tone(BUZZER_PIN,1700);
     delay(800);
-    noTone(buzzer);
+    noTone(BUZZER_PIN);
     STB.dbgln("peep sequence");
 }
 
