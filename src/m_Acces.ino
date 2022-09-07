@@ -69,6 +69,10 @@ Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_R
 // Passwort
 Password passKeypad = Password(secret_password);
 
+// freq is unsinged int, duration is unsigned long
+// ticks remaning, frequency, duration
+int buzzerStatus[3] = {5, 1000, 200};
+
 
 void setup() {
     
@@ -107,6 +111,8 @@ void loop() {
     if (Brain.flags[rfidFlag]) {
         rfidRead();
     }
+    buzzerUpdate();
+
     Brain.slaveRespond();
 
     wdt_reset();
@@ -195,11 +201,21 @@ void passwordReset() {
 
 void buzzer_init(){
     pinMode(BUZZER_PIN,OUTPUT);
+    noTone(BUZZER_PIN);
+    tone(BUZZER_PIN, 1500, 200);
+    delay(500);
+}
+
+void buzzerUpdate() {
+    if (buzzerStatus[0] > 0) {
+        tone(BUZZER_PIN, buzzerStatus[1], (unsigned long) buzzerStatus[2]);
+        buzzerStatus[0]--;
+    }
 }
 
 
 void beep500(){
-    tone(BUZZER_PIN,1700);
+    tone(BUZZER_PIN, 1700, 500);
     delay(100);
     noTone(BUZZER_PIN);
     Brain.STB_.dbgln("peep for 500ms");
