@@ -22,7 +22,7 @@ TODO:
 Fragen and access module Requirements
  - RS485 optimierung welche prio? 
  - relay requirements? Wann brauchen wir das relay-breakout?
- - Dynamischer Headline text wie "Enter Code", "Welcome" etc
+ - Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
  - Necessity toggle between RFID and Keypad
  Änderung hier wird erstmal über THT gemacht aber zwischenzeitlich kann das über SMD gemacht werden, was aber auch erstmal bestellt werden muss
  - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
@@ -47,27 +47,10 @@ Adafruit_PN532 RFID_READERS[1] = {RFID_0};
 uint8_t data[16];
 unsigned long lastRfidCheck = millis();
 
-
-/*==KEYPAD I2C============================================================*/
-const byte KEYPAD_ROWS = 4;  // Zeilen
-const byte KEYPAD_COLS = 3;  // Spalten
-const byte KEYPAD_CODE_LENGTH = 4;
-const byte KEYPAD_CODE_LENGTH_MAX = 7;
-
-char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
-    {'1', '2', '3'},
-    {'4', '5', '6'},
-    {'7', '8', '9'},
-    {'*', '0', '#'}};
-
-
-byte KeypadRowPins[KEYPAD_ROWS] = {1, 6, 5, 3};  // Zeilen  - Messleitungen
-byte KeypadColPins[KEYPAD_COLS] = {2, 0, 4};     // Spalten - Steuerleitungen (abwechselnd HIGH)
-
 Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_ROWS, KEYPAD_COLS, KEYPAD_ADD, PCF8574_MODE);
 
-// Passwort
-Password passKeypad = Password(secret_password);
+// the Evaluation is done on the Mother, may be kept for convenience or removed later
+Password passKeypad = Password(dummyPassword);
 
 // freq is unsinged int, duration is unsigned long
 // ticks remaning, frequency, duration
