@@ -14,7 +14,27 @@ TODO:
  - (optional) make buzzer fncs non blocking to not interfere with the bus unnecessarily
  - ensure critical messages are confirmed like evaluation, may be best to do this in lib arduino with a flag for the slaverespond
  - periodic updates on the password? everytime its polled? reset being handled by mother or brain?
+ - get defenition when what beeping must occur
+ - make buzzer non blocking, tone already supports a single non blocking beep, doubles probably need fnc
+*/
 
+/*
+Fragen and access module Requirements
+ - RS485 optimierung welche prio? 
+ - relay requirements? Wann brauchen wir das relay-breakout?
+ - Dynamischer Headline text wie "Enter Code", "Welcome" etc
+ - Necessity toggle between RFID and Keypad
+ Änderung hier wird erstmal über THT gemacht aber zwischenzeitlich kann das über SMD gemacht werden, was aber auch erstmal bestellt werden muss
+ - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
+ - No specific code on brain?
+ - when does what beeping must occur
+Es soll der jeweilige Status per RS485 an die Mother geschickt werden: 
+Code korrekt, Karte korrekt. Mehr ist aktuell nicht erforderlich
+https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rfid
+
+ - lauflicht funktionalität in library 
+ - mehrfache LED werte übergen in einem packet
+ - Check relays limits aktuell
 */
 
 
