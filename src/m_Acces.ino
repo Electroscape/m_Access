@@ -120,6 +120,8 @@ void keypadEvent(KeypadEvent eKey) {
 
     state = Keypad.getState();
 
+    Brain.STB_.dbgln(String(eKey));
+
     switch (state) {
         case PRESSED:
             switch (eKey) {
@@ -155,26 +157,14 @@ void keypadEvent(KeypadEvent eKey) {
 void checkPassword() {
     if (strlen(passKeypad.guess) < 1) return;
 
-
-    // TBD evaluation on the Mother iirc
-
-    /*
-    bool result = passKeypad.evaluate();
-
-    if (result) {
-        // display some stuff
-    } else {
-
-    }
-
-    return result;
-    */
+    // Todo: send code to the Mother for evaluation
 }
 
 
 void passwordReset() {
     if (strlen(passKeypad.guess) > 0) {
         passKeypad.reset();
+        // Todo: consider updating the mother but it may be just more practical to respond on the Poll 
     }
 }
 
@@ -182,7 +172,7 @@ void passwordReset() {
 // --- Buzzer
 
 
-void buzzer_init(){
+void buzzer_init() {
     pinMode(BUZZER_PIN,OUTPUT);
     noTone(BUZZER_PIN);
     tone(BUZZER_PIN, 1500, 200);
@@ -201,11 +191,12 @@ void beep500(){
     tone(BUZZER_PIN, 1700, 500);
     delay(100);
     noTone(BUZZER_PIN);
-    Brain.STB_.dbgln("peep for 500ms");
+    Serial.println("peep 500");
 }
 
 
 void doubleBeep(){
+    // TODO: do this with buzzerStatus
     tone(BUZZER_PIN,1700);
     delay(300);
     noTone(BUZZER_PIN);
@@ -213,7 +204,7 @@ void doubleBeep(){
     tone(BUZZER_PIN,1700);
     delay(800);
     noTone(BUZZER_PIN);
-    Brain.STB_.dbgln("peep sequence");
+    Serial.println("doubleBeep");
 }
 
 
@@ -221,38 +212,24 @@ void doubleBeep(){
 
 
 void rfidRead() {
+    
     if (millis() - lastRfidCheck < rfidCheckInterval) {
         return;
     }
 
     lastRfidCheck = millis();
-    char message[32] = "!RFID";
-
-    Serial.println("RFID start");
-    Serial.flush();
+    char message[16];
 
     for (int readerNo = 0; readerNo < RFID_AMOUNT; readerNo++) {
         if (STB_RFID::cardRead(RFID_READERS[0], data, RFID_DATABLOCK)) {
-            Serial.println("RFID read succees");
-            Serial.flush();
-            strcat(message, "_");
+            strcpy(message, KeywordsList::rfidKeyword.c_str());
+            // strcat(message, "_");
             strcat(message, (char*) data);
-            doubleBeep();
+            doubleBeep(); // maybe replace this here with setting buzzerStatus
+            Brain.STB_.rs485AddToBuffer(message);
         }
     }
 
-    Serial.println("RFID message adding");
-    Serial.flush();
-
-    
-    //STB.defaultOled.println(message);
-    Brain.STB_.defaultOled.clear();
-    //STB.defaultOled.println(message);
-    Brain.STB_.rs485AddToBuffer(message);
-    // STB.defaultOled.println(STB.bufferOut);
-
-    Serial.println("RFID end");
-    Serial.flush();
 }
 
 
