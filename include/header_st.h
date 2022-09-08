@@ -19,6 +19,8 @@ const byte KEYPAD_COLS = 3;  // Spalten
 const byte KEYPAD_CODE_LENGTH = 4;
 const byte KEYPAD_CODE_LENGTH_MAX = 7;
 
+const int keypadResetInterval = 3000;
+
 char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
     {'1', '2', '3'},
     {'4', '5', '6'},

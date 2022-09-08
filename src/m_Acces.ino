@@ -51,6 +51,7 @@ Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_R
 
 // the Evaluation is done on the Mother, may be kept for convenience or removed later
 Password passKeypad = Password(dummyPassword);
+unsigned long lastKeypadAction = millis();
 
 // freq is unsinged int, duration is unsigned long
 // ticks remaning, frequency, duration
@@ -94,6 +95,8 @@ void loop() {
     if (Brain.flags[rfidFlag]) {
         rfidRead();
     }
+    
+    keypadResetCheck();
     buzzerUpdate();
 
     Brain.slaveRespond();
@@ -165,6 +168,12 @@ void passwordReset() {
     if (strlen(passKeypad.guess) > 0) {
         passKeypad.reset();
         // Todo: consider updating the mother but it may be just more practical to respond on the Poll 
+    }
+}
+
+void keypadResetCheck() {
+    if (millis() - lastKeypadAction > keypadResetInterval) {
+        checkPassword();
     }
 }
 
