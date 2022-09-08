@@ -1,8 +1,4 @@
-#include "header.h"
-#include "header_s.h"
-#include "header_st.h"
-//using namespace stb_namespace;
-#include <Keypad.h> /* Standardbibliothek                                                 */
+#include "header_st.h"                                     
 #include <Keypad_I2C.h>
 #include <stb_brain.h>
 #include <avr/wdt.h>
@@ -12,91 +8,139 @@
 #include <stb_oled.h>
 #include <stb_rfid.h>
 
-#define buzzer 3
-int rcvd;
+
+/*
+TODO:
+ - (optional) make buzzer fncs non blocking to not interfere with the bus unnecessarily
+ - ensure critical messages are confirmed like evaluation, may be best to do this in lib arduino with a flag for the slaverespond
+ - periodic updates on the password? everytime its polled? reset being handled by mother or brain?
+ - get defenition when what beeping must occur
+ - make buzzer non blocking, tone already supports a single non blocking beep, doubles probably need fnc
+*/
+
+/*
+Fragen and access module Requirements
+ - RS485 optimierung welche prio? 
+ - relay requirements? Wann brauchen wir das relay-breakout?
+ - Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
+ - Necessity toggle between RFID and Keypad
+ Änderung hier wird erstmal über THT gemacht aber zwischenzeitlich kann das über SMD gemacht werden, was aber auch erstmal bestellt werden muss
+ - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
+ - No specific code on brain?
+ - when does what beeping must occur
+Es soll der jeweilige Status per RS485 an die Mother geschickt werden: 
+Code korrekt, Karte korrekt. Mehr ist aktuell nicht erforderlich
+https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rfid
+
+ - lauflicht funktionalität in library 
+ - mehrfache LED werte übergen in einem packet
+ - Check relays limits aktuell
+*/
 
 
-STB STB;
-STB_BRAIN BRAIN;
-
-#ifndef rfidDisable
-    // only use software SPI not hardware SPI
-    Adafruit_PN532 RFID_0(PN532_SCK, PN532_MISO, PN532_MOSI, RFID_1_SS_PIN);
-    Adafruit_PN532 RFID_READERS[1] = {RFID_0};
-    uint8_t data[16];
-    unsigned long lastRfidCheck = millis();
-#endif
-
-/*==KEYPAD I2C============================================================*/
-const byte KEYPAD_ROWS = 4;  // Zeilen
-const byte KEYPAD_COLS = 3;  // Spalten
-const byte KEYPAD_CODE_LENGTH = 4;
-const byte KEYPAD_CODE_LENGTH_MAX = 7;
-
-char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
-    {'1', '2', '3'},
-    {'4', '5', '6'},
-    {'7', '8', '9'},
-    {'*', '0', '#'}};
+STB_BRAIN Brain;
 
 
-byte KeypadRowPins[KEYPAD_ROWS] = {1, 6, 5, 3};  // Zeilen  - Messleitungen
-byte KeypadColPins[KEYPAD_COLS] = {2, 0, 4};     // Spalten - Steuerleitungen (abwechselnd HIGH)
-
-static unsigned long update_timer = millis();
-const int keypad_reset_interval = 3000;
+// only use software SPI not hardware SPI
+Adafruit_PN532 RFID_0(PN532_SCK, PN532_MISO, PN532_MOSI, RFID_1_SS_PIN);
+Adafruit_PN532 RFID_READERS[1] = {RFID_0};
+uint8_t data[16];
+unsigned long lastRfidCheck = millis();
 
 Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_ROWS, KEYPAD_COLS, KEYPAD_ADD, PCF8574_MODE);
 
-// Passwort
-Password passKeypad = Password(secret_password);
+// the Evaluation is done on the Mother, may be kept for convenience or removed later
+Password passKeypad = Password(dummyPassword);
+unsigned long lastKeypadAction = millis();
 
-/*==PCF8574============================================================*/
-PCF8574 relay;
+// freq is unsinged int, duration is unsigned long
+// ticks remaning, frequency, duration
+int buzzerStatus[3] = {5, 1000, 200};
 
 
-bool relay_init() {
-    Serial.println("initializing relay");
-    relay.begin(RELAY_I2C_ADD);
+void setup() {
+    
+    // starts serial and default oled
+    
+    Brain.begin();
+    Brain.STB_.dbgln("WDT endabled");
+    wdt_enable(WDTO_8S);
 
-    for (int i = 0; i < REL_AMOUNT; i++) {
-        relay.pinMode(relayPinArray[i], OUTPUT);
-        relay.digitalWrite(relayPinArray[i], relayInitArray[i]);
+    Brain.setSlaveAddr(0);
+
+    // Brain.receiveFlags();
+
+
+    buzzer_init();
+    if (Brain.flags[rfidFlag]) {
+        STB_RFID::RFIDInit(RFID_0);
     }
 
-    Serial.print(F("\n successfully initialized relay\n"));
-    return true;
+    if (Brain.flags[keypadFlag]) {
+        keypad_init();
+    }
+ 
+    Brain.STB_.printSetupEnd();
+
+    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "ENTER CODE");
 }
 
-bool keypad_init() {
+
+void loop() {
+
+    if (Brain.flags[keypadFlag]) {
+        Keypad.getKey();
+    }
+    
+    if (Brain.flags[rfidFlag]) {
+        rfidRead();
+    }
+    
+    keypadResetCheck();
+    buzzerUpdate();
+
+    Brain.slaveRespond();
+
+    wdt_reset();
+}
+
+
+// --- Keypad
+
+
+void keypad_init() {
+    Brain.STB_.dbgln("Keypad: ...");
     Keypad.addEventListener(keypadEvent);  // Event Listener erstellen
     Keypad.begin(makeKeymap(KeypadKeys));
     Keypad.setHoldTime(5000);
     Keypad.setDebounceTime(20);
-    return true;
+    Brain.STB_.dbgln(" ok\n");
 }
+
 
 void keypadEvent(KeypadEvent eKey) {
     KeyState state = IDLE;
 
     state = Keypad.getState();
 
+    Brain.STB_.dbgln(String(eKey));
+
     switch (state) {
         case PRESSED:
-            update_timer = millis();
             switch (eKey) {
                 case '#':
-                    STB.dbgln("change pass\n");
+                    checkPassword();
                     doubleBeep();
                     break;
 
                 case '*':
-                    STB.dbgln("reset pass\n");
+                    passwordReset();
                     break;
 
                 default:
                     passKeypad.append(eKey);
-                    STB.rs485AddToBuffer(passKeypad.guess);
+                    Brain.STB_.rs485AddToBuffer(passKeypad.guess);
+                    STB_OLED::writeCenteredLine(&Brain.STB_.defaultOled, passKeypad.guess);
                     beep500();
                     break;
             }
@@ -107,108 +151,94 @@ void keypadEvent(KeypadEvent eKey) {
     }
 }
 
-void setup() {
-    
-    // starts serial and default oled
-    
-    STB.begin();
-    STB.dbgln("WDT endabled");
-    wdt_enable(WDTO_8S);
-    //STB.i2cScanner();
-    //BRAIN.receiveFlags(STB);
-    STB.rs485SetSlaveAddr(0);
-    buzzer_init();
-    #ifndef rfidDisable
-      STB_RFID::RFIDInit(RFID_0);
-    #endif
 
-    STB.dbgln("Relay: ...");
-    if (relay_init()) {
-        STB.dbgln("ok");
+/**
+ * @brief checks the password and displays
+ * @return true 
+ * @return false 
+ */
+void checkPassword() {
+    if (strlen(passKeypad.guess) < 1) return;
+
+    // Todo: send code to the Mother for evaluation
+}
+
+
+void passwordReset() {
+    if (strlen(passKeypad.guess) > 0) {
+        passKeypad.reset();
+        // Todo: consider updating the mother but it may be just more practical to respond on the Poll 
     }
-    wdt_reset();
+}
 
-
-    STB.dbgln("Keypad: ...");
-    if (keypad_init()) {
-        STB.dbgln(" ok\n");
+void keypadResetCheck() {
+    if (millis() - lastKeypadAction > keypadResetInterval) {
+        checkPassword();
     }
- 
-    STB.printSetupEnd();
-    
-}
-    /**
-     * @brief Initialize both the buzzer and the rfid to read a card
-     * 
-     */
-
-void loop() {
-
-    Keypad.getKey();
-    
-    //#ifndef rfidDisable
-    //    rfidRead();
-    //#endif
-    //STB.rs485SlaveRespond();
-
-    wdt_reset();
 }
 
-void buzzer_init(){
-    pinMode(buzzer,OUTPUT);
+
+// --- Buzzer
+
+
+void buzzer_init() {
+    pinMode(BUZZER_PIN,OUTPUT);
+    noTone(BUZZER_PIN);
+    tone(BUZZER_PIN, 1500, 200);
+    delay(500);
 }
+
+void buzzerUpdate() {
+    if (buzzerStatus[0] > 0) {
+        tone(BUZZER_PIN, buzzerStatus[1], (unsigned long) buzzerStatus[2]);
+        buzzerStatus[0]--;
+    }
+}
+
 
 void beep500(){
-    tone(buzzer,1700);
+    tone(BUZZER_PIN, 1700, 500);
     delay(100);
-    noTone(buzzer);
-    STB.dbgln("peep for 500ms");
+    noTone(BUZZER_PIN);
+    Serial.println("peep 500");
 }
+
 
 void doubleBeep(){
-    tone(buzzer,1700);
+    // TODO: do this with buzzerStatus
+    tone(BUZZER_PIN,1700);
     delay(300);
-    noTone(buzzer);
+    noTone(BUZZER_PIN);
     delay(200);
-    tone(buzzer,1700);
+    tone(BUZZER_PIN,1700);
     delay(800);
-    noTone(buzzer);
-    STB.dbgln("peep sequence");
+    noTone(BUZZER_PIN);
+    Serial.println("doubleBeep");
 }
 
+
+// --- RFID
+
+
 void rfidRead() {
+    
     if (millis() - lastRfidCheck < rfidCheckInterval) {
         return;
     }
 
     lastRfidCheck = millis();
-    char message[32] = "!RFID";
-
-    Serial.println("RFID start");
-    Serial.flush();
+    char message[16];
 
     for (int readerNo = 0; readerNo < RFID_AMOUNT; readerNo++) {
         if (STB_RFID::cardRead(RFID_READERS[0], data, RFID_DATABLOCK)) {
-            Serial.println("RFID read succees");
-            Serial.flush();
-            strcat(message, "_");
+            strcpy(message, KeywordsList::rfidKeyword.c_str());
+            // strcat(message, "_");
             strcat(message, (char*) data);
-            doubleBeep();
+            doubleBeep(); // maybe replace this here with setting buzzerStatus
+            Brain.STB_.rs485AddToBuffer(message);
         }
     }
 
-    Serial.println("RFID message adding");
-    Serial.flush();
-
-    
-    //STB.defaultOled.println(message);
-    STB.defaultOled.clear();
-    //STB.defaultOled.println(message);
-    STB.rs485AddToBuffer(message);
-    STB.defaultOled.println(STB.bufferOut);
-
-    Serial.println("RFID end");
-    Serial.flush();
 }
 
 
