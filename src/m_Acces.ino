@@ -5,8 +5,8 @@
 #include <PCF8574.h> /* https://github.com/skywodd/pcf8574_arduino_library - modifiziert!  */
 
 #include <Password.h>
-#include <stb_oled.h>
 #include <stb_rfid.h>
+#include <stb_keypadCmds.h>
 
 
 /*
@@ -35,6 +35,7 @@ https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rf
  - lauflicht funktionalität in library 
  - mehrfache LED werte übergen in einem packet
  - Check relays limits aktuell
+ - rs485Write with option to not erase buffer or mby a flag in STB
 */
 
 
@@ -159,8 +160,15 @@ void keypadEvent(KeypadEvent eKey) {
  */
 void checkPassword() {
     if (strlen(passKeypad.guess) < 1) return;
-
-    // Todo: send code to the Mother for evaluation
+    char msg[20]; 
+    strcpy(msg, keypadCmdKeyword.c_str());
+    strcat(msg, KeywordsList::delimiter.c_str());
+    char noString[3];
+    sprintf(noString, "%i", KeypadCmds::evaluate);
+    strcat(msg, noString);
+    strcat(msg, KeywordsList::delimiter.c_str());
+    strcat(msg, passKeypad.guess);
+    Brain.addToBuffer(msg, true);
 }
 
 
