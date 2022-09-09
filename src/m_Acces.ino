@@ -56,7 +56,7 @@ unsigned long lastKeypadAction = millis();
 
 // freq is unsinged int, duration is unsigned long
 // ticks remaning, frequency, duration
-int buzzerStatus[3] = {5, 1000, 200};
+int buzzerStatus[3] = {1, 1000, 50};
 
 
 void setup() {
@@ -70,6 +70,9 @@ void setup() {
     Brain.setSlaveAddr(0);
 
     // Brain.receiveFlags();
+    // for ease of developmen
+    Brain.flags[rfidFlag] = 1;
+    Brain.flags[keypadFlag] = 1;
 
 
     buzzer_init();
@@ -134,7 +137,7 @@ bool checkForHeadline() {
 
 // checks keypad feedback, its only correct/incorrect
 bool checkForValid() {
-    if (strncmp(keypadCmdKeyword.c_str(), Brain.STB_.rcvdPtr, keypadCmdKeyword.length()) == 0) {
+    if (strncmp(keypadCmd.c_str(), Brain.STB_.rcvdPtr, keypadCmd.length()) == 0) {
         // do i need a fresh char pts here?
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
@@ -175,6 +178,10 @@ void keypadEvent(KeypadEvent eKey) {
 
     Brain.STB_.dbgln(String(eKey));
 
+    if (state == PRESSED) {
+        lastKeypadAction = millis();
+    }
+
     switch (state) {
         case PRESSED:
             switch (eKey) {
@@ -212,7 +219,7 @@ void keypadEvent(KeypadEvent eKey) {
 void checkPassword() {
     if (strlen(passKeypad.guess) < 1) return;
     char msg[20]; 
-    strcpy(msg, keypadCmdKeyword.c_str());
+    strcpy(msg, keypadCmd.c_str());
     strcat(msg, KeywordsList::delimiter.c_str());
     char noString[3];
     sprintf(noString, "%i", KeypadCmds::evaluate);
@@ -243,8 +250,6 @@ void keypadResetCheck() {
 void buzzer_init() {
     pinMode(BUZZER_PIN,OUTPUT);
     noTone(BUZZER_PIN);
-    tone(BUZZER_PIN, 1500, 200);
-    delay(500);
 }
 
 void buzzerUpdate() {
