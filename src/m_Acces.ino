@@ -7,6 +7,7 @@
 #include <Password.h>
 #include <stb_rfid.h>
 #include <stb_keypadCmds.h>
+#include <stb_oledCmds.h>
 
 
 /*
@@ -131,6 +132,12 @@ void interpreter() {
 
 // checks what the oled headline should display
 bool checkForHeadline() {
+    if ( strncmp(oledHeaderCmd.c_str(), Brain.STB_.rcvdPtr, oledHeaderCmd.length()) == 0) {
+        char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
+        cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
+        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, cmdPtr);
+        return true;
+    }
     return false;
 }
 
