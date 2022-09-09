@@ -286,7 +286,7 @@ void rfidRead() {
     char message[16];
 
     for (int readerNo = 0; readerNo < RFID_AMOUNT; readerNo++) {
-        if (STB_RFID::cardRead(RFID_READERS[0], data, RFID_DATABLOCK)) {
+        if (STB_RFID::cardRead(RFID_READERS[0], data)) {
             strcpy(message, KeywordsList::rfidKeyword.c_str());
             // strcat(message, "_");
             strcat(message, (char*) data);
