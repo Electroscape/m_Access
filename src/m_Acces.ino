@@ -102,9 +102,57 @@ void loop() {
 
     Brain.slaveRespond();
 
+    interpreter();
+
     wdt_reset();
 }
 
+
+void interpreter() {
+    /*
+        - check headline
+        - check correct/wrong
+        - toggle RFID/Keypad
+        - needs to handle multiple lines
+    */
+
+    while (Brain.STB_.rcvdPtr != NULL) {
+        checkForValid();
+
+
+        Brain.nextRcvdLn();
+    }
+}
+
+
+// checks what the oled headline should display
+bool checkForHeadline() {
+    return false;
+}
+
+
+// checks keypad feedback, its only correct/incorrect
+bool checkForValid() {
+    if (strncmp(keypadCmdKeyword.c_str(), Brain.STB_.rcvdPtr, keypadCmdKeyword.length())) {
+        // do i need a fresh char pts here?
+        char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
+        cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
+        int cmdNo;
+        sscanf(cmdPtr, "%d", &cmdNo);
+        if (cmdNo == KeypadCmds::correct) {
+            // beep correct
+        } else {
+            // beep false
+        }
+        return true;
+    }
+    return false;
+}
+
+// checks if RFID or Keypad should be toggled
+bool toggled() {
+    return false;
+}
 
 // --- Keypad
 
