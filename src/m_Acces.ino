@@ -83,6 +83,7 @@ void setup() {
  
     Brain.STB_.printSetupEnd();
 
+    // TODO: replace this, going to be done from Mother
     STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "ENTER CODE");
 }
 
@@ -133,7 +134,7 @@ bool checkForHeadline() {
 
 // checks keypad feedback, its only correct/incorrect
 bool checkForValid() {
-    if (strncmp(keypadCmdKeyword.c_str(), Brain.STB_.rcvdPtr, keypadCmdKeyword.length())) {
+    if (strncmp(keypadCmdKeyword.c_str(), Brain.STB_.rcvdPtr, keypadCmdKeyword.length()) == 0) {
         // do i need a fresh char pts here?
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
@@ -158,12 +159,12 @@ bool toggled() {
 
 
 void keypad_init() {
-    Brain.STB_.dbgln("Keypad: ...");
+    Brain.STB_.dbgln(F("Keypad: ..."));
     Keypad.addEventListener(keypadEvent);  // Event Listener erstellen
     Keypad.begin(makeKeymap(KeypadKeys));
     Keypad.setHoldTime(5000);
     Keypad.setDebounceTime(20);
-    Brain.STB_.dbgln(" ok\n");
+    Brain.STB_.dbgln(F(" ok\n"));
 }
 
 
@@ -188,9 +189,11 @@ void keypadEvent(KeypadEvent eKey) {
 
                 default:
                     passKeypad.append(eKey);
-                    Brain.STB_.rs485AddToBuffer(passKeypad.guess);
+                    // currently optional and nice to have but other things are prio
+                    // Brain.STB_.rs485AddToBuffer(passKeypad.guess);
+                    // TODO: probably going to modify this
                     STB_OLED::writeCenteredLine(&Brain.STB_.defaultOled, passKeypad.guess);
-                    beep500();
+                    tone(BUZZER_PIN, 1700, 100);
                     break;
             }
             break;
@@ -249,14 +252,6 @@ void buzzerUpdate() {
         tone(BUZZER_PIN, buzzerStatus[1], (unsigned long) buzzerStatus[2]);
         buzzerStatus[0]--;
     }
-}
-
-
-void beep500(){
-    tone(BUZZER_PIN, 1700, 500);
-    delay(100);
-    noTone(BUZZER_PIN);
-    Serial.println("peep 500");
 }
 
 
