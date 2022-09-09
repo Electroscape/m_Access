@@ -2,6 +2,7 @@
 
 #include <stb_mother.h>
 #include <stb_keypadCmds.h>
+#include <stb_oledCmds.h>
 
 STB_MOTHER Mother;
 int stage = 0;
@@ -28,7 +29,7 @@ void setup() {
 bool checkForKeypad() {
     if (passwordMap[stage] < 0) { return false; }
 
-    if (strncmp(keypadCmdKeyword.c_str(), Mother.STB_.rcvdPtr, keypadCmdKeyword.length()) == 0) {
+    if (strncmp(keypadCmd.c_str(), Mother.STB_.rcvdPtr, keypadCmd.length()) == 0) {
         
         char *cmdPtr = strtok(Mother.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
@@ -43,10 +44,12 @@ bool checkForKeypad() {
                 // send NACK? this isnt in the control flow yet
                 return false;
             }
-
+            // TODO: check for ACK handling on Brain
+            // maybe have optional bool for NACK?
             Mother.sendAck();
+
             char msg[10] = "";
-            strcpy(msg, keypadCmdKeyword.c_str());
+            strcpy(msg, keypadCmd.c_str());
             strcat(msg, KeywordsList::delimiter.c_str());
             char noString[3];
             if (strncmp(passwords[stage], cmdPtr, strlen(passwords[stage]) ) == 0) {
@@ -58,9 +61,9 @@ bool checkForKeypad() {
                 strcat(msg, noString);
             }
             // slaveNo needs to be really optional at this point. the default shall be polledslave
-            Mother.sendCmdToSlave(Mother.rs485getPolledSlave(), msg);
+            Mother.sendCmdToSlave(msg);
         }
-        // TODO: check for ACK handling on Brain
+        
         
         return true;
     }
@@ -84,6 +87,13 @@ void interpreter() {
 
 void updateOled() {
     if (lastStage == stage) { return; }
+    char msg[32];
+    strcpy(msg, oledHeaderCmd.c_str());
+    strcat(msg, KeywordsList::delimiter.c_str());
+    strcat(msg, stageTexts[stage]); 
+    while (!Mother.sendCmdToSlave(msg)) {
+        wdt_reset();
+    }
     // do the oled update thing 
 }
 
