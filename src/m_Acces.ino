@@ -107,26 +107,20 @@ void loop() {
 
     Brain.slaveRespond();
 
-    interpreter();
+
+    while (Brain.STB_.rcvdPtr != NULL) {
+        interpreter();
+        Brain.nextRcvdLn();
+    }
 
     wdt_reset();
 }
 
 
 void interpreter() {
-    /*
-        - check headline
-        - check correct/wrong
-        - toggle RFID/Keypad
-        - needs to handle multiple lines
-    */
-
-    while (Brain.STB_.rcvdPtr != NULL) {
-        checkForValid();
-
-
-        Brain.nextRcvdLn();
-    }
+    if (checkForValid()) {return;}
+    if (checkForHeadline()) {return;}
+    if (checkToggled()) {return;}
 }
 
 
@@ -161,7 +155,7 @@ bool checkForValid() {
 }
 
 // checks if RFID or Keypad should be toggled
-bool toggled() {
+bool checkToggled() {
     return false;
 }
 
@@ -259,6 +253,8 @@ void buzzer_init() {
     noTone(BUZZER_PIN);
 }
 
+
+// may change this to contain differen lengts for on and off depending on reqs
 void buzzerUpdate() {
     if (buzzerStatus[0] > 0) {
         tone(BUZZER_PIN, buzzerStatus[1], (unsigned long) buzzerStatus[2]);
@@ -266,7 +262,7 @@ void buzzerUpdate() {
     }
 }
 
-
+/*
 void doubleBeep(){
     // TODO: do this with buzzerStatus
     tone(BUZZER_PIN,1700);
@@ -278,6 +274,7 @@ void doubleBeep(){
     noTone(BUZZER_PIN);
     Serial.println("doubleBeep");
 }
+*/
 
 
 // --- RFID
@@ -297,7 +294,7 @@ void rfidRead() {
             strcpy(message, KeywordsList::rfidKeyword.c_str());
             // strcat(message, "_");
             strcat(message, (char*) data);
-            doubleBeep(); // maybe replace this here with setting buzzerStatus
+            tone(BUZZER_PIN, 1700, 100);
             Brain.STB_.rs485AddToBuffer(message);
         }
     }
