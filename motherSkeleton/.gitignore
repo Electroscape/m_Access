@@ -1,0 +1,5 @@
+.pio
+!.pio/build/nanoatmega328new/.hex
+!.pio/build/nanoatmega328/firmware.hex
+.vscode
+.idea
