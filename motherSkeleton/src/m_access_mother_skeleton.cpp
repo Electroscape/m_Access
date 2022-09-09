@@ -73,7 +73,17 @@ bool checkForKeypad() {
 
 bool checkForRfid() {
     if (passwordMap[stage] < 0) { return false; }
-    return false;
+    // not matching the keyword
+    if (strncmp(KeywordsList::rfidKeyword.c_str(), Mother.STB_.rcvdPtr, KeywordsList::rfidKeyword.length() ) != 0) {
+        return false;
+    } 
+    char *cmdPtr = strtok(Mother.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
+    cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
+    if (strncmp(passwords[passwordMap[stage]], cmdPtr, strlen(passwords[passwordMap[stage]]) ) == 0 ) {
+        // send some form of validation to trigger buzzer
+        stage++;
+    }
+    return true;
 }
 
 
