@@ -1,8 +1,25 @@
+/**
+ * @file m_access_mother_skeleton.cpp
+ * @author Martin Pek (martin.pek@web.de)
+ * @brief 
+ * @version 0.1
+ * @date 2022-09-09
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ *  TODO: 
+ *  - check passwords and passwordsmap usages 
+ *  - consider a generic code/combination evaluation
+ * 
+ */
+
 #include "header_st.h"
 
 #include <stb_mother.h>
 #include <stb_keypadCmds.h>
 #include <stb_oledCmds.h>
+
+
 
 STB_MOTHER Mother;
 int stage = 0;

@@ -1,3 +1,14 @@
+/**
+ * @file m_Acces.ino
+ * @author Martin Pek (martin.pek@web.de)
+ * @brief access module supports RFID and Keypad authentication with oled&buzzer feedback
+ * @version 0.1
+ * @date 2022-09-09
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "header_st.h"                                     
 #include <Keypad_I2C.h>
 #include <stb_brain.h>
