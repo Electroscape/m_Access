@@ -5,6 +5,8 @@
 
 STB_MOTHER Mother;
 int stage = 0;
+// doing this so the first time it updates the brains oled without an exta setup line
+int lastStage = -1;
 
 
 void setup() {
@@ -43,12 +45,20 @@ bool checkForKeypad() {
             }
 
             Mother.sendAck();
+            char msg[10] = "";
+            strcpy(msg, keypadCmdKeyword.c_str());
+            strcat(msg, KeywordsList::delimiter.c_str());
+            char noString[3];
             if (strncmp(passwords[stage], cmdPtr, strlen(passwords[stage]) ) == 0) {
-                char msg[10] = "";
-                strcpy(msg, keypadCmdKeyword.c_str());
-                // slaveNo needs to be really optional at this point. the default shall be polledslave
-                Mother.sendCmdToSlave(Mother.rs485getPolledSlave(), msg);
+                sprintf(noString, "%d", KeypadCmds::correct);
+                strcat(msg, noString);
+                stage++;
+            } else {
+                sprintf(noString, "%d", KeypadCmds::wrong);
+                strcat(msg, noString);
             }
+            // slaveNo needs to be really optional at this point. the default shall be polledslave
+            Mother.sendCmdToSlave(Mother.rs485getPolledSlave(), msg);
         }
         // TODO: check for ACK handling on Brain
         
@@ -70,6 +80,11 @@ void interpreter() {
         if (checkForRfid()) {continue;};
         Mother.nextRcvdLn();
     }
+}
+
+void updateOled() {
+    if (lastStage == stage) { return; }
+    // do the oled update thing 
 }
 
 
