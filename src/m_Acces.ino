@@ -34,11 +34,10 @@ TODO:
 Fragen and access module Requirements
  - RS485 optimierung welche prio? 
  - relay requirements? Wann brauchen wir das relay-breakout?
- - Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
- - Necessity toggle between RFID and Keypad
+ - ✅ Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
+ - 🔲 Necessity toggle between RFID and Keypad
  Änderung hier wird erstmal über THT gemacht aber zwischenzeitlich kann das über SMD gemacht werden, was aber auch erstmal bestellt werden muss
  - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
- - No specific code on brain?
  - when does what beeping must occur
 Es soll der jeweilige Status per RS485 an die Mother geschickt werden: 
 Code korrekt, Karte korrekt. Mehr ist aktuell nicht erforderlich
@@ -199,7 +198,7 @@ void keypadEvent(KeypadEvent eKey) {
             switch (eKey) {
                 case '#':
                     checkPassword();
-                    doubleBeep();
+                    // some beep? or only after mother answers?
                     break;
 
                 case '*':
