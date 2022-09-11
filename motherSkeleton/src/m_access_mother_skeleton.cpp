@@ -13,11 +13,12 @@
  * 
  */
 
-#include "header_st.h"
 
 #include <stb_mother.h>
 #include <stb_keypadCmds.h>
 #include <stb_oledCmds.h>
+
+#include "header_st.h"
 
 
 
@@ -43,6 +44,7 @@ void setup() {
 }
 
 
+// candidate to be moved to a mother specific part of the keypad lib
 bool checkForKeypad() {
     if (passwordMap[stage] < 0) { return false; }
 
@@ -81,13 +83,13 @@ bool checkForKeypad() {
             Mother.sendCmdToSlave(msg);
         }
         
-        
         return true;
     }
     return false;
 }
 
 
+// again good candidate for a mother specific lib
 bool checkForRfid() {
     if (passwordMap[stage] < 0) { return false; }
     // not matching the keyword
@@ -112,7 +114,7 @@ void interpreter() {
     }
 }
 
-void updateOled() {
+void stageUpdate() {
     if (lastStage == stage) { return; }
     char msg[32];
     strcpy(msg, oledHeaderCmd.c_str());
