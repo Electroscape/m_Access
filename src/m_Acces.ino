@@ -84,6 +84,8 @@ void setup() {
     // for ease of developmen
     Brain.flags[rfidFlag] = 1;
     Brain.flags[keypadFlag] = 1;
+    // not sure if used, but heyo its there make it active
+    Brain.flags[oledFlag] = 1;
 
 
     buzzer_init();
@@ -98,7 +100,7 @@ void setup() {
     Brain.STB_.printSetupEnd();
 
     // TODO: replace this, going to be done from Mother
-    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "ENTER CODE");
+    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Startup");
 }
 
 
@@ -111,7 +113,6 @@ void loop() {
     if (Brain.flags[rfidFlag]) {
         rfidRead();
     }
-    
     keypadResetCheck();
     buzzerUpdate();
 
@@ -187,8 +188,6 @@ void keypadEvent(KeypadEvent eKey) {
 
     state = Keypad.getState();
 
-    Brain.STB_.dbgln(String(eKey));
-
     if (state == PRESSED) {
         lastKeypadAction = millis();
     }
@@ -209,9 +208,11 @@ void keypadEvent(KeypadEvent eKey) {
                     passKeypad.append(eKey);
                     // currently optional and nice to have but other things are prio
                     // Brain.STB_.rs485AddToBuffer(passKeypad.guess);
-                    // TODO: probably going to modify this
-                    STB_OLED::writeCenteredLine(&Brain.STB_.defaultOled, passKeypad.guess);
+                    // TODO: probably going to modify this this needs to be centered line 2
+                    STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, passKeypad.guess, true);
                     tone(BUZZER_PIN, 1700, 100);
+                    // Serial.println("done keypress");
+                    // Serial.flush();
                     break;
             }
             break;
@@ -237,6 +238,8 @@ void checkPassword() {
     strcat(msg, noString);
     strcat(msg, KeywordsList::delimiter.c_str());
     strcat(msg, passKeypad.guess);
+    passwordReset();
+    STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, F("..."), true);
     Brain.addToBuffer(msg, true);
 }
 
@@ -244,8 +247,11 @@ void checkPassword() {
 void passwordReset() {
     if (strlen(passKeypad.guess) > 0) {
         passKeypad.reset();
+        // oled clear?
         // Todo: consider updating the mother but it may be just more practical to respond on the Poll 
     }
+    
+    STB_OLED::clearAbove(Brain.STB_.defaultOled, 2);
 }
 
 void keypadResetCheck() {
