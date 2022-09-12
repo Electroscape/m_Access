@@ -118,8 +118,8 @@ void loop() {
 
     Brain.slaveRespond();
 
-
     while (Brain.STB_.rcvdPtr != NULL) {
+        Serial.dbgln("Brain.STB_.rcvdPtr");
         interpreter();
         Brain.nextRcvdLn();
     }
@@ -149,7 +149,11 @@ bool checkForHeadline() {
 
 // checks keypad feedback, its only correct/incorrect
 bool checkForValid() {
+    Serial.print("checking: ");
+    Serial.println(Brain.STB_.rcvdPtr);
     if (strncmp(keypadCmd.c_str(), Brain.STB_.rcvdPtr, keypadCmd.length()) == 0) {
+        
+        Serial.println("incoming keypadCmd");
         // do i need a fresh char pts here?
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
