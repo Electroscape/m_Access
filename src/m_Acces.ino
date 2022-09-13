@@ -119,7 +119,7 @@ void loop() {
     Brain.slaveRespond();
 
     while (Brain.STB_.rcvdPtr != NULL) {
-        Serial.dbgln("Brain.STB_.rcvdPtr");
+        Serial.println("Brain.STB_.rcvdPtr");
         interpreter();
         Brain.nextRcvdLn();
     }
@@ -138,6 +138,7 @@ void interpreter() {
 // checks what the oled headline should display
 bool checkForHeadline() {
     if ( strncmp(oledHeaderCmd.c_str(), Brain.STB_.rcvdPtr, oledHeaderCmd.length()) == 0) {
+        Brain.sendAck();
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
         STB_OLED::writeHeadline(&Brain.STB_.defaultOled, cmdPtr);
@@ -160,9 +161,11 @@ bool checkForValid() {
         int cmdNo;
         sscanf(cmdPtr, "%d", &cmdNo);
         if (cmdNo == KeypadCmds::correct) {
-            // beep correct
+            tone(BUZZER_PIN, 1000, 1000);
         } else {
-            // beep false
+            buzzerStatus[0] = 2;
+            buzzerStatus[1] = 1700;
+            buzzerStatus[2] = 150;
         }
         return true;
     }
@@ -315,7 +318,7 @@ void rfidRead() {
             // strcat(message, "_");
             strcat(message, (char*) data);
             tone(BUZZER_PIN, 1700, 100);
-            Brain.STB_.rs485AddToBuffer(message);
+            Brain.addToBuffer(message, true);
         }
     }
 
