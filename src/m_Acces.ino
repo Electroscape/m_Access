@@ -47,6 +47,7 @@ https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rf
  - mehrfache LED werte übergen in einem packet
  - Check relays limits aktuell
  - rs485Write with option to not erase buffer or mby a flag in STB
+ - split poll into pull and push cmd then handled seperately
 */
 
 
