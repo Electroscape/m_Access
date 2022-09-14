@@ -76,7 +76,7 @@ void setup() {
     // starts serial and default oled
     
     Brain.begin();
-    Brain.STB_.dbgln("WDT endabled");
+    Brain.STB_.dbgln("v0.03");
     wdt_enable(WDTO_8S);
 
     Brain.setSlaveAddr(0);
@@ -107,6 +107,9 @@ void setup() {
 
 void loop() {
 
+    wdt_reset();
+    
+
     if (Brain.flags[keypadFlag]) {
         Keypad.getKey();
     }
@@ -114,18 +117,20 @@ void loop() {
     if (Brain.flags[rfidFlag]) {
         rfidRead();
     }
+    
     keypadResetCheck();
     buzzerUpdate();
 
-    Brain.slaveRespond();
+    if (!Brain.slaveRespond()) {
+        return;
+    }
 
     while (Brain.STB_.rcvdPtr != NULL) {
         Serial.println("Brain.STB_.rcvdPtr");
         interpreter();
         Brain.nextRcvdLn();
     }
-
-    wdt_reset();
+    
 }
 
 
@@ -154,7 +159,7 @@ bool checkForValid() {
     Serial.print("checking: ");
     Serial.println(Brain.STB_.rcvdPtr);
     if (strncmp(keypadCmd.c_str(), Brain.STB_.rcvdPtr, keypadCmd.length()) == 0) {
-        
+        Brain.sendAck();
         Serial.println("incoming keypadCmd");
         // do i need a fresh char pts here?
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
