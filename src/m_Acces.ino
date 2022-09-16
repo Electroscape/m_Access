@@ -48,6 +48,7 @@ https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rf
  - Check relays limits aktuell
  - rs485Write with option to not erase buffer or mby a flag in STB
  - split poll into pull and push cmd then handled seperately
+ - consider a generic non specifc clearing of oled
 */
 
 
@@ -159,19 +160,25 @@ bool checkForValid() {
     Serial.print("checking: ");
     Serial.println(Brain.STB_.rcvdPtr);
     if (strncmp(keypadCmd.c_str(), Brain.STB_.rcvdPtr, keypadCmd.length()) == 0) {
-        
+        Brain.sendAck();
         Serial.println("incoming keypadCmd");
         // do i need a fresh char pts here?
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
         int cmdNo;
         sscanf(cmdPtr, "%d", &cmdNo);
+
         if (cmdNo == KeypadCmds::correct) {
-            tone(BUZZER_PIN, 1000, 1000);
+            buzzerStatus[0] = 1;
+            buzzerStatus[1] = 1700;
+            buzzerStatus[2] = 1000;
+            STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("valid"), true);
+            // tone(BUZZER_PIN, 1700, 1000);
         } else {
             buzzerStatus[0] = 2;
-            buzzerStatus[1] = 1700;
+            buzzerStatus[1] = 900;
             buzzerStatus[2] = 150;
+            STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("invalid"), true);
         }
         return true;
     }
@@ -316,15 +323,16 @@ void rfidRead() {
     }
 
     lastRfidCheck = millis();
-    char message[16];
+    char message[20];
 
     for (int readerNo = 0; readerNo < RFID_AMOUNT; readerNo++) {
         if (STB_RFID::cardRead(RFID_READERS[0], data)) {
             strcpy(message, KeywordsList::rfidKeyword.c_str());
-            // strcat(message, "_");
             strcat(message, (char*) data);
-            tone(BUZZER_PIN, 1700, 100);
-            Brain.addToBuffer(message, true);
+            // tone(BUZZER_PIN, 1700, 100);
+            Brain.addToBuffer(message);
+            // simply adding a delay here, alternatively we save the RFID card identy and dont rescan the same
+            lastRfidCheck = millis() + 8000;
         }
     }
 
