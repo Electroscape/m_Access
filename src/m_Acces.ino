@@ -49,6 +49,7 @@ https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rf
  - rs485Write with option to not erase buffer or mby a flag in STB
  - split poll into pull and push cmd then handled seperately
  - consider a generic non specifc clearing of oled
+ - rework buzzerupdate
 */
 
 
@@ -77,7 +78,7 @@ void setup() {
     // starts serial and default oled
     
     Brain.begin();
-    Brain.STB_.dbgln("v0.03");
+    Brain.STB_.dbgln("v0.05");
     wdt_enable(WDTO_8S);
 
     Brain.setSlaveAddr(0);
@@ -101,8 +102,7 @@ void setup() {
  
     Brain.STB_.printSetupEnd();
 
-    // TODO: replace this, going to be done from Mother
-    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Startup");
+    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Booting");
 }
 
 
@@ -110,7 +110,6 @@ void loop() {
 
     wdt_reset();
     
-
     if (Brain.flags[keypadFlag]) {
         Keypad.getKey();
     }
@@ -157,8 +156,10 @@ bool checkForHeadline() {
 
 // checks keypad feedback, its only correct/incorrect
 bool checkForValid() {
-    Serial.print("checking: ");
-    Serial.println(Brain.STB_.rcvdPtr);
+
+    // Serial.print("checking: ");
+    // Serial.println(Brain.STB_.rcvdPtr);
+    
     if (strncmp(keypadCmd.c_str(), Brain.STB_.rcvdPtr, keypadCmd.length()) == 0) {
         Brain.sendAck();
         Serial.println("incoming keypadCmd");
@@ -184,6 +185,7 @@ bool checkForValid() {
     }
     return false;
 }
+
 
 // checks if RFID or Keypad should be toggled
 bool checkToggled() {
@@ -231,8 +233,6 @@ void keypadEvent(KeypadEvent eKey) {
                     // TODO: probably going to modify this this needs to be centered line 2
                     STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, passKeypad.guess, true);
                     tone(BUZZER_PIN, 1700, 100);
-                    // Serial.println("done keypress");
-                    // Serial.flush();
                     break;
             }
             break;
@@ -297,20 +297,6 @@ void buzzerUpdate() {
         buzzerStatus[0]--;
     }
 }
-
-/*
-void doubleBeep(){
-    // TODO: do this with buzzerStatus
-    tone(BUZZER_PIN,1700);
-    delay(300);
-    noTone(BUZZER_PIN);
-    delay(200);
-    tone(BUZZER_PIN,1700);
-    delay(800);
-    noTone(BUZZER_PIN);
-    Serial.println("doubleBeep");
-}
-*/
 
 
 // --- RFID
