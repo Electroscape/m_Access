@@ -70,7 +70,9 @@ unsigned long lastKeypadAction = millis();
 
 // freq is unsinged int, durations are unsigned long
 // frequency, ontime, offtime
-int buzzerStages[BuzzerMaxStages][3] = {{1, 1000, 50}};
+unsigned int buzzerFreq[BuzzerMaxStages] = {0};
+unsigned long buzzerOn[BuzzerMaxStages] = {0};
+unsigned long buzzerOff[BuzzerMaxStages] = {0};
 unsigned long buzzerTimeStamp = millis();
 int buzzerStage = -1;
 
@@ -156,10 +158,10 @@ bool checkForHeadline() {
 // --- Buzzer 
 
 
-void setBuzzerStage(int stage, int freq, int ontime, int offtime=0) {
-    buzzerStages[stage][buzzerFreq] = freq;
-    buzzerStages[stage][buzzerOnTime] = ontime;
-    buzzerStages[stage][buzzerOffTime] = offtime;
+void setBuzzerStage(int stage, unsigned int freq, unsigned long ontime, unsigned long offtime=0) {
+    buzzerFreq[stage] = freq;
+    buzzerOn[stage] = ontime;
+    buzzerOff[stage] = offtime;
     buzzerStage = 0;
 }
 
@@ -180,9 +182,9 @@ void buzzerUpdate() {
 
     if (buzzerStage == 0 || millis() - buzzerTimeStamp > 0) {
         // moves next execution to after the on + offtime elapsed 
-        buzzerTimeStamp = millis() + buzzerStages[buzzerStage][buzzerOnTime] + buzzerStages[buzzerStage][buzzerOffTime];
-        if (buzzerStages[buzzerFreq] > 0) {
-            tone(BUZZER_PIN, 
+        buzzerTimeStamp = millis() + buzzerOn[buzzerStage] + buzzerOff[buzzerStage];
+        if (buzzerFreq[buzzerStage] > 0) {
+            tone(BUZZER_PIN, buzzerFreq[buzzerStage], buzzerOn[buzzerStage]);
                 (unsigned) buzzerStages[buzzerStage][buzzerFreq], 
                 (unsigned long) buzzerStages[buzzerStage][buzzerOnTime]
             );
@@ -199,7 +201,7 @@ void buzzerUpdate() {
 
 void buzzerReset() {
     for (int i=0; i<BuzzerMaxStages; i++) {
-        buzzerStages[i][buzzerFreq] = 0;
+        buzzerFreq[i] = 0;
     }
 }
 
