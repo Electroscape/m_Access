@@ -85,18 +85,15 @@ void setup() {
 
     // Brain.receiveFlags();
     // for ease of developmen
-    Brain.flags[rfidFlag] = 1;
-    Brain.flags[keypadFlag] = 1;
-    // not sure if used, but heyo its there make it active
-    Brain.flags[oledFlag] = 1;
+    Brain.flags = rfidFlag + oledFlag + keypadFlag;
 
 
     buzzer_init();
-    if (Brain.flags[rfidFlag]) {
+    if (Brain.flags & rfidFlag) {
         STB_RFID::RFIDInit(RFID_0);
     }
 
-    if (Brain.flags[keypadFlag]) {
+    if (Brain.flags & keypadFlag) {
         keypad_init();
     }
  
@@ -110,11 +107,11 @@ void loop() {
 
     wdt_reset();
     
-    if (Brain.flags[keypadFlag]) {
+    if (Brain.flags & keypadFlag) {
         Keypad.getKey();
     }
     
-    if (Brain.flags[rfidFlag]) {
+    if (Brain.flags & rfidFlag) {
         rfidRead();
     }
     
@@ -126,7 +123,7 @@ void loop() {
     }
 
     while (Brain.STB_.rcvdPtr != NULL) {
-        Serial.println("Brain.STB_.rcvdPtr");
+        // Serial.println("Brain.STB_.rcvdPtr");
         interpreter();
         Brain.nextRcvdLn();
     }
@@ -137,7 +134,11 @@ void loop() {
 void interpreter() {
     if (checkForValid()) {return;}
     if (checkForHeadline()) {return;}
-    if (checkToggled()) {return;}
+    if (Brain.receiveFlags()) {
+        Serial.print("flags are: ");
+        Serial.println(Brain.flags);
+        delay(5000);
+    }
 }
 
 
