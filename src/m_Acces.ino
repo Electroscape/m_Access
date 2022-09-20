@@ -49,6 +49,7 @@ https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rf
  - rs485Write with option to not erase buffer or mby a flag in STB
  - split poll into pull and push cmd then handled seperately
  - consider a generic non specifc clearing of oled
+ - rework buzzerupdate
 */
 
 
@@ -67,9 +68,11 @@ Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_R
 Password passKeypad = Password(dummyPassword);
 unsigned long lastKeypadAction = millis();
 
-// freq is unsinged int, duration is unsigned long
-// ticks remaning, frequency, duration
-int buzzerStatus[3] = {1, 1000, 50};
+// freq is unsinged int, durations are unsigned long
+// frequency, ontime, offtime
+int buzzerStages[BuzzerMaxStages][3] = {{1, 1000, 50}};
+unsigned long buzzerTimeStamp = millis();
+int buzzerStage = -1;
 
 
 void setup() {
@@ -77,32 +80,28 @@ void setup() {
     // starts serial and default oled
     
     Brain.begin();
-    Brain.STB_.dbgln("v0.03");
+    Brain.STB_.dbgln("v0.05");
     wdt_enable(WDTO_8S);
 
     Brain.setSlaveAddr(0);
 
     // Brain.receiveFlags();
     // for ease of developmen
-    Brain.flags[rfidFlag] = 1;
-    Brain.flags[keypadFlag] = 1;
-    // not sure if used, but heyo its there make it active
-    Brain.flags[oledFlag] = 1;
+    Brain.flags = rfidFlag + oledFlag + keypadFlag;
 
 
     buzzer_init();
-    if (Brain.flags[rfidFlag]) {
+    if (Brain.flags & rfidFlag) {
         STB_RFID::RFIDInit(RFID_0);
     }
 
-    if (Brain.flags[keypadFlag]) {
+    if (Brain.flags & keypadFlag) {
         keypad_init();
     }
  
     Brain.STB_.printSetupEnd();
 
-    // TODO: replace this, going to be done from Mother
-    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Startup");
+    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Booting");
 }
 
 
@@ -110,12 +109,11 @@ void loop() {
 
     wdt_reset();
     
-
-    if (Brain.flags[keypadFlag]) {
+    if (Brain.flags & keypadFlag) {
         Keypad.getKey();
     }
     
-    if (Brain.flags[rfidFlag]) {
+    if (Brain.flags & rfidFlag) {
         rfidRead();
     }
     
@@ -127,7 +125,7 @@ void loop() {
     }
 
     while (Brain.STB_.rcvdPtr != NULL) {
-        Serial.println("Brain.STB_.rcvdPtr");
+        // Serial.println("Brain.STB_.rcvdPtr");
         interpreter();
         Brain.nextRcvdLn();
     }
@@ -138,7 +136,7 @@ void loop() {
 void interpreter() {
     if (checkForValid()) {return;}
     if (checkForHeadline()) {return;}
-    if (checkToggled()) {return;}
+    Brain.receiveFlags();
 }
 
 
@@ -155,13 +153,67 @@ bool checkForHeadline() {
 }
 
 
+// --- Buzzer 
+
+
+void setBuzzerStage(int stage, int freq, int ontime, int offtime=0) {
+    buzzerStages[stage][buzzerFreq] = freq;
+    buzzerStages[stage][buzzerOnTime] = ontime;
+    buzzerStages[stage][buzzerOffTime] = offtime;
+    buzzerStage = 0;
+}
+
+
+void buzzer_init() {
+    pinMode(BUZZER_PIN,OUTPUT);
+    noTone(BUZZER_PIN);
+}
+
+
+// may change this to contain differen lengts for on and off depending on reqs
+void buzzerUpdate() {
+    if (buzzerStage < 0) {return;}
+    if (buzzerStage >= BuzzerMaxStages) {
+        buzzerStage = -1;
+        return;
+    }
+
+    if (buzzerStage == 0 || millis() - buzzerTimeStamp > 0) {
+        // moves next execution to after the on + offtime elapsed 
+        buzzerTimeStamp = millis() + buzzerStages[buzzerStage][buzzerOnTime] + buzzerStages[buzzerStage][buzzerOffTime];
+        if (buzzerStages[buzzerFreq] > 0) {
+            tone(BUZZER_PIN, 
+                (unsigned) buzzerStages[buzzerStage][buzzerFreq], 
+                (unsigned long) buzzerStages[buzzerStage][buzzerOnTime]
+            );
+            buzzerStage++;
+            return;
+        } else {
+            buzzerStage=-1;
+        }
+    }
+
+    buzzerReset();
+}
+
+
+void buzzerReset() {
+    for (int i=0; i<BuzzerMaxStages; i++) {
+        buzzerStages[i][buzzerFreq] = 0;
+    }
+}
+
+
+
 // checks keypad feedback, its only correct/incorrect
 bool checkForValid() {
-    Serial.print("checking: ");
-    Serial.println(Brain.STB_.rcvdPtr);
+
+    // Serial.print("checking: ");
+    // Serial.println(Brain.STB_.rcvdPtr);
+    
     if (strncmp(keypadCmd.c_str(), Brain.STB_.rcvdPtr, keypadCmd.length()) == 0) {
         Brain.sendAck();
-        Serial.println("incoming keypadCmd");
+        // Serial.println("incoming keypadCmd");
         // do i need a fresh char pts here?
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
@@ -169,15 +221,14 @@ bool checkForValid() {
         sscanf(cmdPtr, "%d", &cmdNo);
 
         if (cmdNo == KeypadCmds::correct) {
-            buzzerStatus[0] = 1;
-            buzzerStatus[1] = 1700;
-            buzzerStatus[2] = 1000;
+            setBuzzerStage(0, 1000, 500, 100);
+            setBuzzerStage(1, 2500, 2500, 0);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("valid"), true);
             // tone(BUZZER_PIN, 1700, 1000);
         } else {
-            buzzerStatus[0] = 2;
-            buzzerStatus[1] = 900;
-            buzzerStatus[2] = 150;
+            setBuzzerStage(0, 800, 250, 200);
+            setBuzzerStage(1, 400, 500, 200);
+            setBuzzerStage(2, 400, 500, 200);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("invalid"), true);
         }
         return true;
@@ -185,10 +236,6 @@ bool checkForValid() {
     return false;
 }
 
-// checks if RFID or Keypad should be toggled
-bool checkToggled() {
-    return false;
-}
 
 // --- Keypad
 
@@ -231,8 +278,6 @@ void keypadEvent(KeypadEvent eKey) {
                     // TODO: probably going to modify this this needs to be centered line 2
                     STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, passKeypad.guess, true);
                     tone(BUZZER_PIN, 1700, 100);
-                    // Serial.println("done keypress");
-                    // Serial.flush();
                     break;
             }
             break;
@@ -274,43 +319,12 @@ void passwordReset() {
     STB_OLED::clearAbove(Brain.STB_.defaultOled, 2);
 }
 
+
 void keypadResetCheck() {
     if (millis() - lastKeypadAction > keypadResetInterval) {
         checkPassword();
     }
 }
-
-
-// --- Buzzer
-
-
-void buzzer_init() {
-    pinMode(BUZZER_PIN,OUTPUT);
-    noTone(BUZZER_PIN);
-}
-
-
-// may change this to contain differen lengts for on and off depending on reqs
-void buzzerUpdate() {
-    if (buzzerStatus[0] > 0) {
-        tone(BUZZER_PIN, buzzerStatus[1], (unsigned long) buzzerStatus[2]);
-        buzzerStatus[0]--;
-    }
-}
-
-/*
-void doubleBeep(){
-    // TODO: do this with buzzerStatus
-    tone(BUZZER_PIN,1700);
-    delay(300);
-    noTone(BUZZER_PIN);
-    delay(200);
-    tone(BUZZER_PIN,1700);
-    delay(800);
-    noTone(BUZZER_PIN);
-    Serial.println("doubleBeep");
-}
-*/
 
 
 // --- RFID

@@ -5,7 +5,13 @@ const unsigned long rfidCheckInterval = 250;
 
 // using PWM 1 (the left most)
 #define BUZZER_PIN 9
+#define BuzzerMaxStages 3
 
+enum {
+    buzzerFreq,
+    buzzerOnTime,
+    buzzerOffTime
+};
 
 /*==KEYPAD I2C============================================================*/
 #define KEYPAD_ADD 0x38
@@ -28,3 +34,4 @@ char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
 
 byte KeypadRowPins[KEYPAD_ROWS] = {1, 6, 5, 3};  // Zeilen  - Messleitungen
 byte KeypadColPins[KEYPAD_COLS] = {2, 0, 4};     // Spalten - Steuerleitungen (abwechselnd HIGH)
+
