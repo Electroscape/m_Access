@@ -22,6 +22,7 @@
 
 
 /*
+build for lib_arduino 0.6.7 onwards
 TODO:
  - (optional) make buzzer fncs non blocking to not interfere with the bus unnecessarily
  - ensure critical messages are confirmed like evaluation, may be best to do this in lib arduino with a flag for the slaverespond
@@ -31,17 +32,14 @@ TODO:
 */
 
 /*
+🔲✅
 Fragen and access module Requirements
  - RS485 optimierung welche prio? 
  - relay requirements? Wann brauchen wir das relay-breakout?
  - ✅ Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
- - 🔲 Necessity toggle between RFID and Keypad
+ - ✅ Necessity toggle between RFID and Keypad
  Änderung hier wird erstmal über THT gemacht aber zwischenzeitlich kann das über SMD gemacht werden, was aber auch erstmal bestellt werden muss
  - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
- - when does what beeping must occur
-Es soll der jeweilige Status per RS485 an die Mother geschickt werden: 
-Code korrekt, Karte korrekt. Mehr ist aktuell nicht erforderlich
-https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rfid
 
  - lauflicht funktionalität in library 
  - mehrfache LED werte übergen in einem packet
@@ -49,7 +47,6 @@ https://www.meistertask.com/app/task/mZyBg1ER/access-modul-1-keypad-modul-mit-rf
  - rs485Write with option to not erase buffer or mby a flag in STB
  - split poll into pull and push cmd then handled seperately
  - consider a generic non specifc clearing of oled
- - rework buzzerupdate
 */
 
 
@@ -82,7 +79,7 @@ void setup() {
     // starts serial and default oled
     
     Brain.begin();
-    Brain.STB_.dbgln("v0.05");
+    Brain.STB_.dbgln("v0.09");
     wdt_enable(WDTO_8S);
 
     Brain.setSlaveAddr(0);
@@ -131,7 +128,6 @@ void loop() {
         interpreter();
         Brain.nextRcvdLn();
     }
-    
 }
 
 
@@ -157,11 +153,17 @@ bool checkForHeadline() {
 
 // --- Buzzer 
 
-
-void setBuzzerStage(int stage, unsigned int freq, unsigned long ontime, unsigned long offtime=0) {
-    buzzerFreq[stage] = freq;
-    buzzerOn[stage] = ontime;
-    buzzerOff[stage] = offtime;
+/**
+ * @brief Set buzzer timings to be excecuter
+ * @param i 
+ * @param freq 
+ * @param ontime 
+ * @param offtime 
+*/
+void setBuzzerStage(int i, unsigned int freq, unsigned long ontime, unsigned long offtime=0) {
+    buzzerFreq[i] = freq;
+    buzzerOn[i] = ontime;
+    buzzerOff[i] = offtime;
     buzzerStage = 0;
 }
 
@@ -176,35 +178,33 @@ void buzzer_init() {
 void buzzerUpdate() {
     if (buzzerStage < 0) {return;}
     if (buzzerStage >= BuzzerMaxStages) {
-        buzzerStage = -1;
+        buzzerReset();
         return;
     }
 
-    if (buzzerStage == 0 || millis() - buzzerTimeStamp > 0) {
+    if (buzzerStage == 0 || millis() > buzzerTimeStamp) {
         // moves next execution to after the on + offtime elapsed 
         buzzerTimeStamp = millis() + buzzerOn[buzzerStage] + buzzerOff[buzzerStage];
         if (buzzerFreq[buzzerStage] > 0) {
             tone(BUZZER_PIN, buzzerFreq[buzzerStage], buzzerOn[buzzerStage]);
-                (unsigned) buzzerStages[buzzerStage][buzzerFreq], 
-                (unsigned long) buzzerStages[buzzerStage][buzzerOnTime]
-            );
             buzzerStage++;
             return;
         } else {
-            buzzerStage=-1;
+            buzzerReset();
         }
     }
-
-    buzzerReset();
 }
 
 
 void buzzerReset() {
     for (int i=0; i<BuzzerMaxStages; i++) {
+        buzzerStage = -1;
         buzzerFreq[i] = 0;
     }
 }
 
+
+// ---
 
 
 // checks keypad feedback, its only correct/incorrect
@@ -223,14 +223,14 @@ bool checkForValid() {
         sscanf(cmdPtr, "%d", &cmdNo);
 
         if (cmdNo == KeypadCmds::correct) {
-            setBuzzerStage(0, 1000, 500, 100);
-            setBuzzerStage(1, 2500, 2500, 0);
+            setBuzzerStage(0, 1000, 400, 200);
+            setBuzzerStage(1, 1500, 1500, 0);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("valid"), true);
             // tone(BUZZER_PIN, 1700, 1000);
         } else {
-            setBuzzerStage(0, 800, 250, 200);
-            setBuzzerStage(1, 400, 500, 200);
-            setBuzzerStage(2, 400, 500, 200);
+            setBuzzerStage(0, 800, 300, 200);
+            setBuzzerStage(1, 400, 400, 200);
+            setBuzzerStage(2, 400, 400, 200);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("invalid"), true);
         }
         return true;

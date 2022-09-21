@@ -7,12 +7,6 @@ const unsigned long rfidCheckInterval = 250;
 #define BUZZER_PIN 9
 #define BuzzerMaxStages 3
 
-enum {
-    buzzerFreq,
-    buzzerOnTime,
-    buzzerOffTime
-};
-
 /*==KEYPAD I2C============================================================*/
 #define KEYPAD_ADD 0x38
 
