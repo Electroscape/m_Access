@@ -65,12 +65,16 @@ Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_R
 Password passKeypad = Password(dummyPassword);
 unsigned long lastKeypadAction = millis();
 
+unsigned long lastOledAction = millis();
+// technically only the 3rd line i will update
+bool oledHasContent = false;
 // freq is unsinged int, durations are unsigned long
 // frequency, ontime, offtime
 unsigned int buzzerFreq[BuzzerMaxStages] = {0};
 unsigned long buzzerOn[BuzzerMaxStages] = {0};
 unsigned long buzzerOff[BuzzerMaxStages] = {0};
 unsigned long buzzerTimeStamp = millis();
+
 int buzzerStage = -1;
 
 
@@ -118,6 +122,7 @@ void loop() {
     
     keypadResetCheck();
     buzzerUpdate();
+    oledResetCheck();
 
     if (!Brain.slaveRespond()) {
         return;
@@ -228,11 +233,13 @@ bool checkForValid() {
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("valid"), true);
             // tone(BUZZER_PIN, 1700, 1000);
         } else {
-            setBuzzerStage(0, 800, 300, 200);
-            setBuzzerStage(1, 400, 400, 200);
-            setBuzzerStage(2, 400, 400, 200);
+            setBuzzerStage(0, 800, 200, 50);
+            setBuzzerStage(1, 400, 400, 100);
+            setBuzzerStage(2, 400, 600, 200);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("invalid"), true);
         }
+        oledHasContent = true;
+        lastOledAction = millis();
         return true;
     }
     return false;
@@ -274,6 +281,7 @@ void keypadEvent(KeypadEvent eKey) {
                     break;
 
                 default:
+                    if (oledHasContent) {return;}
                     passKeypad.append(eKey);
                     if (strlen(passKeypad.guess) >= KEYPAD_CODE_LENGTH_MAX) {
                         checkPassword();
@@ -312,14 +320,20 @@ void checkPassword() {
 }
 
 
+void oledReset() {
+    STB_OLED::clearAbove(Brain.STB_.defaultOled, 2);
+    oledHasContent = false;
+}
+
 void passwordReset() {
     if (strlen(passKeypad.guess) > 0) {
         passKeypad.reset();
+        oledReset();
         // oled clear?
         // Todo: consider updating the mother but it may be just more practical to respond on the Poll 
     }
     
-    STB_OLED::clearAbove(Brain.STB_.defaultOled, 2);
+    
 }
 
 
@@ -328,6 +342,15 @@ void keypadResetCheck() {
         checkPassword();
     }
 }
+
+
+void oledResetCheck() {
+    if (!oledHasContent) {return;}
+    if (millis() - lastOledAction > keypadResetInterval) {
+        oledReset();
+    }
+}
+
 
 
 // --- RFID
