@@ -275,6 +275,9 @@ void keypadEvent(KeypadEvent eKey) {
 
                 default:
                     passKeypad.append(eKey);
+                    if (strlen(passKeypad.guess) >= KEYPAD_CODE_LENGTH_MAX) {
+                        checkPassword();
+                    }
                     // currently optional and nice to have but other things are prio
                     // Brain.STB_.rs485AddToBuffer(passKeypad.guess);
                     // TODO: probably going to modify this this needs to be centered line 2
@@ -291,9 +294,7 @@ void keypadEvent(KeypadEvent eKey) {
 
 
 /**
- * @brief checks the password and displays
- * @return true 
- * @return false 
+ * @brief sends the password to the Mother for evaluation
  */
 void checkPassword() {
     if (strlen(passKeypad.guess) < 1) return;

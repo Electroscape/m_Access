@@ -15,7 +15,7 @@ char dummyPassword[] = "";
 const byte KEYPAD_ROWS = 4;  // Zeilen
 const byte KEYPAD_COLS = 3;  // Spalten
 const byte KEYPAD_CODE_LENGTH = 4;
-const byte KEYPAD_CODE_LENGTH_MAX = 7;
+const byte KEYPAD_CODE_LENGTH_MAX = 8;
 
 const int keypadResetInterval = 3000;
 
