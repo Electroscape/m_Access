@@ -238,8 +238,6 @@ bool checkForValid() {
             setBuzzerStage(2, 400, 600, 200);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("invalid"), true);
         }
-        oledHasContent = true;
-        lastOledAction = millis();
         return true;
     }
     return false;
@@ -316,6 +314,8 @@ void checkPassword() {
     strcat(msg, passKeypad.guess);
     passwordReset();
     STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, F("..."), true);
+    oledHasContent = true;
+    lastOledAction = millis();
     Brain.addToBuffer(msg, true);
 }
 
