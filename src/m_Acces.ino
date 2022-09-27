@@ -24,29 +24,17 @@
 /*
 build for lib_arduino 0.6.7 onwards
 TODO:
- - (optional) make buzzer fncs non blocking to not interfere with the bus unnecessarily
- - ensure critical messages are confirmed like evaluation, may be best to do this in lib arduino with a flag for the slaverespond
- - periodic updates on the password? everytime its polled? reset being handled by mother or brain?
- - get defenition when what beeping must occur
- - make buzzer non blocking, tone already supports a single non blocking beep, doubles probably need fnc
-*/
-
+ - periodic updates on the password? everytime its polled? 
 /*
 🔲✅
 Fragen and access module Requirements
- - RS485 optimierung welche prio? 
- - relay requirements? Wann brauchen wir das relay-breakout?
  - ✅ Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
  - ✅ Necessity toggle between RFID and Keypad
- Änderung hier wird erstmal über THT gemacht aber zwischenzeitlich kann das über SMD gemacht werden, was aber auch erstmal bestellt werden muss
  - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
-
  - lauflicht funktionalität in library 
  - mehrfache LED werte übergen in einem packet
- - Check relays limits aktuell
- - rs485Write with option to not erase buffer or mby a flag in STB
- - split poll into pull and push cmd then handled seperately
- - consider a generic non specifc clearing of oled
+ - ✅ split poll into pull and push cmd then handled seperately
+ - 🔲 wrong rfid may trigger twice
 */
 
 
@@ -88,10 +76,9 @@ void setup() {
 
     Brain.setSlaveAddr(0);
 
-    // Brain.receiveFlags();
-    // for ease of developmen
+    // Brain.receiveSetup();
+    // for ease of development
     Brain.flags = rfidFlag + oledFlag + keypadFlag;
-
 
     buzzer_init();
     if (Brain.flags & rfidFlag) {
