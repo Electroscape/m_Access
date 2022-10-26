@@ -25,16 +25,12 @@
 build for lib_arduino 0.6.7 onwards
 TODO:
  - periodic updates on the password? everytime its polled? 
-/*
+
 🔲✅
 Fragen and access module Requirements
  - ✅ Dynamischer Headline text wie "Enter Code", "Welcome" etc over cmd from Mother
  - ✅ Necessity toggle between RFID and Keypad
- - Welches feedback kommt beim RFID? Beinhaltet das feedback das Oled?
- - lauflicht funktionalität in library 
- - mehrfache LED werte übergen in einem packet
- - ✅ split poll into pull and push cmd then handled seperately
- - 🔲 wrong rfid may trigger twice
+ - ✅  wrong rfid may trigger twice
 */
 
 
