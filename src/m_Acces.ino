@@ -134,9 +134,11 @@ void interpreter() {
 bool checkForHeadline() {
     if ( strncmp(oledHeaderCmd.c_str(), Brain.STB_.rcvdPtr, oledHeaderCmd.length()) == 0) {
         Brain.sendAck();
+        Serial.flush();
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
         STB_OLED::writeHeadline(&Brain.STB_.defaultOled, cmdPtr);
+        delay(1);
         return true;
     }
     return false;
