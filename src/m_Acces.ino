@@ -133,7 +133,7 @@ bool checkForHeadline() {
         Serial.flush();
         char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
         cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
-        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, cmdPtr);
+        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, String(cmdPtr));
         delay(1);
         return true;
     }
