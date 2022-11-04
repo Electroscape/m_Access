@@ -18,6 +18,8 @@ const byte KEYPAD_CODE_LENGTH = 4;
 const byte KEYPAD_CODE_LENGTH_MAX = 8;
 
 const int keypadResetInterval = 3000;
+const unsigned int keypadBaseTone = 294;
+const unsigned int keypadPitchMultiplier = 40;
 
 char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
     {'1', '2', '3'},
