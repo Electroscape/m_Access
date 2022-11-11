@@ -74,7 +74,7 @@ void setup() {
 
     // Brain.receiveSetup();
     // for ease of development
-    Brain.flags = rfidFlag + oledFlag + keypadFlag;
+    Brain.flags = rfidFlag + oledFlag;
 
     buzzer_init();
     if (Brain.flags & rfidFlag) {
@@ -131,9 +131,10 @@ bool checkForHeadline() {
     if ( strncmp(oledHeaderCmd.c_str(), Brain.STB_.rcvdPtr, oledHeaderCmd.length()) == 0) {
         Brain.sendAck();
         Serial.flush();
-        char *cmdPtr = strtok(Brain.STB_.rcvdPtr, KeywordsList::delimiter.c_str());
-        cmdPtr = strtok(NULL, KeywordsList::delimiter.c_str());
-        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, String(cmdPtr));
+        Serial.println("headline rcvd");
+        // due to delimiter + 1
+        Brain.STB_.rcvdPtr += oledHeaderCmd.length() + 1; 
+        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, String(Brain.STB_.rcvdPtr));
         delay(1);
         return true;
     }
