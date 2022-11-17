@@ -295,10 +295,10 @@ void keypadEvent(KeypadEvent eKey) {
  */
 void checkPassword() {
     if (strlen(passKeypad.guess) < 1) return;
-    char msg[20]; 
+    char msg[20] = ""; 
     strcpy(msg, keypadCmd.c_str());
     strcat(msg, KeywordsList::delimiter.c_str());
-    char noString[3];
+    char noString[3] = "";
     sprintf(noString, "%i", KeypadCmds::evaluate);
     strcat(msg, noString);
     strcat(msg, KeywordsList::delimiter.c_str());
