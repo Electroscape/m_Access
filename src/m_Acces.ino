@@ -304,7 +304,7 @@ void checkPassword() {
     strcat(msg, KeywordsList::delimiter.c_str());
     strcat(msg, passKeypad.guess);
     passwordReset();
-    STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, F("..."), true);
+    STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, processingText, true);
     oledHasContent = true;
     lastOledAction = millis();
     Brain.addToBuffer(msg, true);
@@ -354,16 +354,16 @@ void rfidRead() {
     }
 
     lastRfidCheck = millis();
-    char message[20];
+    char message[20] = "";
 
     for (int readerNo = 0; readerNo < RFID_AMOUNT; readerNo++) {
         if (STB_RFID::cardRead(RFID_READERS[0], data)) {
+            STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, processingText, true);
             strcpy(message, KeywordsList::rfidKeyword.c_str());
             strcat(message, (char*) data);
-            // tone(BUZZER_PIN, 1700, 100);
             Brain.addToBuffer(message);
             // simply adding a delay here, alternatively we save the RFID card identy and dont rescan the same
-            lastRfidCheck = millis() + 8000;
+            lastRfidCheck = millis() + rfidCooldown;
         }
     }
 
