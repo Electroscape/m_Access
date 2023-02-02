@@ -9,9 +9,10 @@ const unsigned long rfidCheckInterval = 250;
 
 /*==KEYPAD I2C============================================================*/
 #define KEYPAD_ADD 0x38
+#define dataBufferSize 16
 
 char dummyPassword[] = "";
-const char processingText[] PROGMEM = {"..."};
+const String processingText = "...";
 
 const byte KEYPAD_ROWS = 4;  // Zeilen
 const byte KEYPAD_COLS = 3;  // Spalten

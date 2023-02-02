@@ -40,7 +40,7 @@ STB_BRAIN Brain;
 // only use software SPI not hardware SPI
 Adafruit_PN532 RFID_0(PN532_SCK, PN532_MISO, PN532_MOSI, RFID_1_SS_PIN);
 Adafruit_PN532 RFID_READERS[1] = {RFID_0};
-uint8_t data[16];
+uint8_t data[dataBufferSize] = {};
 unsigned long lastRfidCheck = millis();
 
 Keypad_I2C Keypad(makeKeymap(KeypadKeys), KeypadRowPins, KeypadColPins, KEYPAD_ROWS, KEYPAD_COLS, KEYPAD_ADD, PCF8574_MODE);
@@ -60,36 +60,6 @@ unsigned long buzzerOff[BuzzerMaxStages] = {0};
 unsigned long buzzerTimeStamp = millis();
 
 int buzzerStage = -1;
-
-
-void setup() {
-    
-    // starts serial and default oled
-    
-    Brain.begin();
-    Brain.STB_.dbgln("v0.09");
-    wdt_enable(WDTO_8S);
-
-    Brain.setSlaveAddr(0);
-
-    // Brain.receiveSetup();
-    // for ease of development
-    Brain.flags = rfidFlag + oledFlag;
-
-    buzzer_init();
-    if (Brain.flags & rfidFlag) {
-        STB_RFID::RFIDInit(RFID_0);
-    }
-
-    if (Brain.flags & keypadFlag) {
-        keypad_init();
-    }
- 
-    Brain.STB_.printSetupEnd();
-
-    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Booting");
-}
-
 
 void loop() {
 
@@ -134,7 +104,9 @@ bool checkForHeadline() {
         Serial.println("headline rcvd");
         // due to delimiter + 1
         Brain.STB_.rcvdPtr += oledHeaderCmd.length() + 1; 
-        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, String(Brain.STB_.rcvdPtr));
+        String oledText = String(Brain.STB_.rcvdPtr);
+        STB_OLED::writeHeadline(&Brain.STB_.defaultOled, oledText);
+        oledHasContent = false;
         delay(1);
         return true;
     }
@@ -224,6 +196,8 @@ bool checkForValid() {
             setBuzzerStage(2, 400, 600, 200);
             STB_OLED::writeToLine(&Brain.STB_.defaultOled, 3, F("invalid"), true);
         }
+        oledHasContent = true;
+        lastOledAction = millis();
         return true;
     }
     return false;
@@ -336,9 +310,10 @@ void keypadResetCheck() {
 
 
 void oledResetCheck() {
-    if (!oledHasContent) {return;}
-    if (millis() - lastOledAction > keypadResetInterval) {
-        oledReset();
+    if (oledHasContent) {
+        if (millis() - lastOledAction > keypadResetInterval) {
+            oledReset();
+        }
     }
 }
 
@@ -350,11 +325,12 @@ void oledResetCheck() {
 void rfidRead() {
     
     if (millis() - lastRfidCheck < rfidCheckInterval) {
-        return;
+        // return;
     }
 
     lastRfidCheck = millis();
     char message[20] = "";
+    memset(data, 0, dataBufferSize);
 
     for (int readerNo = 0; readerNo < RFID_AMOUNT; readerNo++) {
         if (STB_RFID::cardRead(RFID_READERS[0], data)) {
@@ -363,10 +339,43 @@ void rfidRead() {
             strcat(message, (char*) data);
             Brain.addToBuffer(message);
             // simply adding a delay here, alternatively we save the RFID card identy and dont rescan the same
-            lastRfidCheck = millis() + rfidCooldown;
+            // lastRfidCheck = millis() + rfidCooldown;
         }
     }
 
 }
+
+
+void setup() {
+    
+    // starts serial and default oled
+    
+    Brain.begin();
+    Brain.STB_.dbgln("v0.09");
+    wdt_enable(WDTO_8S);
+
+    Brain.setSlaveAddr(1);
+
+    // Brain.receiveSetup();
+    // for ease of development
+    Brain.flags = rfidFlag + oledFlag;
+
+    buzzer_init();
+    tone(BUZZER_PIN, 1700, 1000);
+    delay(1000);
+    if (Brain.flags & rfidFlag) {
+        STB_RFID::RFIDInit(RFID_0);
+    }
+
+    if (Brain.flags & keypadFlag) {
+        keypad_init();
+    }
+ 
+    Brain.STB_.printSetupEnd();
+    
+
+    STB_OLED::writeHeadline(&Brain.STB_.defaultOled, "Booting");
+}
+
 
 
