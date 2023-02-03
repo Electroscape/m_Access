@@ -311,7 +311,7 @@ void keypadResetCheck() {
 
 void oledResetCheck() {
     if (oledHasContent) {
-        if (millis() - lastOledAction > keypadResetInterval) {
+        if (millis() > lastOledAction + keypadResetInterval) {
             oledReset();
         }
     }
@@ -338,6 +338,8 @@ void rfidRead() {
             strcpy(message, KeywordsList::rfidKeyword.c_str());
             strcat(message, (char*) data);
             Brain.addToBuffer(message);
+            oledHasContent = true;
+            lastOledAction = millis();
             // simply adding a delay here, alternatively we save the RFID card identy and dont rescan the same
             // lastRfidCheck = millis() + rfidCooldown;
         }
@@ -354,15 +356,14 @@ void setup() {
     Brain.STB_.dbgln("v0.09");
     wdt_enable(WDTO_8S);
 
-    Brain.setSlaveAddr(1);
+    Brain.setSlaveAddr(0);
 
     // Brain.receiveSetup();
     // for ease of development
     Brain.flags = rfidFlag + oledFlag;
 
     buzzer_init();
-    tone(BUZZER_PIN, 1700, 1000);
-    delay(1000);
+    
     if (Brain.flags & rfidFlag) {
         STB_RFID::RFIDInit(RFID_0);
     }
