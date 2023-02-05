@@ -19,7 +19,7 @@ const byte KEYPAD_COLS = 3;  // Spalten
 const byte KEYPAD_CODE_LENGTH = 4;
 const byte KEYPAD_CODE_LENGTH_MAX = 8;
 
-const int keypadResetInterval = 3000;
+const unsigned long keypadResetInterval = 3000;
 const unsigned long rfidCooldown = 8000;
 const unsigned int keypadBaseTone = 294;
 const unsigned int keypadPitchMultiplier = 40;
