@@ -236,7 +236,7 @@ void keypadEvent(KeypadEvent eKey) {
 
                 case '*':
                     passwordReset();
-                    tone(BUZZER_PIN, 261, 400);
+                    tone(BUZZER_PIN, 211, 400);
                     break;
 
                 default:
@@ -249,10 +249,12 @@ void keypadEvent(KeypadEvent eKey) {
                     // Brain.STB_.rs485AddToBuffer(passKeypad.guess);
                     // TODO: probably going to modify this this needs to be centered line 2
 
-                    unsigned int eKeyUInt = (unsigned char) (eKey - '0');
-                    Serial.println(eKeyUInt);
+                    int eKeyInt = (unsigned char) (eKey - '0');
                     STB_OLED::writeToLine(&Brain.STB_.defaultOled, 2, passKeypad.guess, true);
-                    tone(BUZZER_PIN, keypadBaseTone + keypadPitchMultiplier*eKeyUInt, 100);
+
+                    if (eKeyInt <= toneCnt) {
+                        tone(BUZZER_PIN, tones[eKeyInt], 75);
+                    }
                     // delay(200);
                     break;
             }
@@ -360,7 +362,8 @@ void setup() {
 
     // Brain.receiveSetup();
     // for ease of development
-    Brain.flags = rfidFlag + oledFlag;
+    // Brain.flags = rfidFlag + oledFlag;
+    Brain.flags = keypadFlag + oledFlag;
 
     buzzer_init();
     

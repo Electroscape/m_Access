@@ -21,14 +21,45 @@ const byte KEYPAD_CODE_LENGTH_MAX = 8;
 
 const unsigned long keypadResetInterval = 3000;
 const unsigned long rfidCooldown = 8000;
-const unsigned int keypadBaseTone = 294;
-const unsigned int keypadPitchMultiplier = 40;
+
+// 5:4 gr Terz
+// 6:5 kl Terz
+// 264×(6÷5)^x
+
+/* gr Terz
+    264,
+    330,
+    412,
+    516,
+    645,
+    806,
+    1007,
+    1259,
+    1573,
+    1967,
+*/
+
+#define toneCnt     10
+unsigned int tones[toneCnt] = {
+    264,
+    317,
+    380,
+    456,
+    547,
+    657,
+    788,
+    946,
+    1135,
+    1362,
+    // 2459,
+};
 
 char KeypadKeys[KEYPAD_ROWS][KEYPAD_COLS] = {
     {'1', '2', '3'},
     {'4', '5', '6'},
     {'7', '8', '9'},
-    {'*', '0', '#'}};
+    {'*', '0', '#'}
+};
 
 
 byte KeypadRowPins[KEYPAD_ROWS] = {1, 6, 5, 3};  // Zeilen  - Messleitungen
